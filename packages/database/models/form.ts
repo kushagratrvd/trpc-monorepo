@@ -13,8 +13,6 @@ export const formsTable = pgTable("forms", {
 
   title: varchar("title", { length: 55 }).notNull(),
 
-  slug: varchar("slug", { length: 60 }).notNull().unique(),
-
   description: varchar("description", { length: 300 }),
   createdBy: uuid('created_by').references(() => usersTable.id),
 
