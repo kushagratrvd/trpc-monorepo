@@ -12,21 +12,7 @@ import {
 import { formsTable } from "./form";
 
 export const fieldTypeEnum = pgEnum('field_type_enum', [
-  'TEXT',
-  'NUMBER',
-  'EMAIL',
-  'PHONE',
-  'DROPDOWN',
-  'MULTI_SELECT',
-  'CHECKBOX',
-  'RADIO',
-  'FILE',
-  'DATE',
-  'DATETIME',
-  'TIME',
-  'TEXTAREA',
-  'ADDRESS',
-  'URL'
+  'TEXT', 'NUMBER', 'EMAIL', 'YES_NO', 'PASSWORD'
 ])
 
 export const formFieldsTable = pgTable("form_fields", {
