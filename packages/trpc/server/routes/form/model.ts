@@ -91,3 +91,15 @@ export const getFormOutputModel = z.object({
     updatedAt: z.date().nullable(),
     fields: z.array(formFieldObject),
 }).nullable()
+
+export const submitFormInputModel = z.object({
+    formId: z.string().uuid().describe('UUID of the form being submitted'),
+    values: z.array(z.object({
+        formFieldId: z.string().uuid().describe('UUID of the form field'),
+        value: z.string().describe('Value of the form field'),
+    })).min(1, 'At least one field is required').describe('Array of form field values'),
+})
+
+export const submitFormOutputModel = z.object({
+    id: z.string().describe('UUID of the submitted form'),
+})

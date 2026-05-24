@@ -161,3 +161,33 @@ export const useGetForm = (formId: string) => {
         status
     }
 }
+
+export const useSubmitForm = (formId: string) => {
+    const utils = trpc.useUtils()
+
+    const {
+        mutateAsync: submitFormAsync,
+        mutate: submitForm,
+        error,
+        failureCount,
+        isError,
+        isIdle,
+        isSuccess,
+        status
+    } = trpc.form.submitForm.useMutation({
+        onSuccess: async () => {
+            await utils.form.getForm.invalidate({ formId })
+        }
+    })
+
+    return {
+        submitFormAsync,
+        submitForm,
+        error,
+        failureCount,
+        isError,
+        isIdle,
+        isSuccess,
+        status
+    }
+}

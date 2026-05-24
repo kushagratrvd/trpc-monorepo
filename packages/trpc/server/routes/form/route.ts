@@ -13,9 +13,11 @@ import {
     updateFieldOutputModel,
     getFormInputModel,
     getFormOutputModel,
+    submitFormInputModel,
+    submitFormOutputModel,
 } from "./model";
 import { generatePath } from "../../utils/path-generator";
-import { formService, formFieldService } from "../../services";
+import { formService, formFieldService, formSubmissionService } from "../../services";
 import { z } from "zod";
 
 const TAGS = ["form"];
@@ -122,5 +124,16 @@ export const formRouter = router({
             return formService.getFormById({ formId })
         }),
 
-    
+    submitForm: publicProcedure.meta({
+        openapi: {
+            method: 'POST',
+            path: getPath('/submitForm'),
+            tags: TAGS,
+        }
+    })
+        .input(submitFormInputModel)
+        .output(submitFormOutputModel)
+        .mutation(async ({ input }) => {
+            return formSubmissionService.submitForm(input)
+        }),
 });

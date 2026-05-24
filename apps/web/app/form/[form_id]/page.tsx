@@ -2,7 +2,7 @@
 
 import { use, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
-import { useGetForm } from "~/hooks/api/form"
+import { useGetForm, useSubmitForm } from "~/hooks/api/form"
 import { Button } from "~/components/ui/button"
 import { Input } from "~/components/ui/input"
 import { Switch } from "~/components/ui/switch"
@@ -20,8 +20,10 @@ type PublicFormPageProps = {
 export default function PublicFormPage({ params }: PublicFormPageProps) {
   const { form_id: formId } = use(params)
   const { form, isLoading, error } = useGetForm(formId)
+  const { submitFormAsync } = useSubmitForm(formId)
   const [submitted, setSubmitted] = useState(false)
   const [submittedData, setSubmittedData] = useState<Record<string, any> | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const {
     register,
@@ -31,10 +33,34 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
   } = useForm()
 
   const onSubmit = async (data: Record<string, any>) => {
-    // Simulate API delay for a polished experience
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setSubmittedData(data)
-    setSubmitted(true)
+    if (!form) return
+    setSubmitError(null)
+    try {
+      const submissionValues = form.fields.map((field) => {
+        const rawValue = data[field.labelKey]
+        let stringValue = ""
+        if (field.type === "YES_NO") {
+          stringValue = rawValue ? "true" : "false"
+        } else if (rawValue !== undefined && rawValue !== null) {
+          stringValue = String(rawValue)
+        }
+        return {
+          formFieldId: field.id,
+          value: stringValue,
+        }
+      })
+
+      await submitFormAsync({
+        formId,
+        values: submissionValues,
+      })
+
+      setSubmittedData(data)
+      setSubmitted(true)
+    } catch (err: any) {
+      console.error("Submission failed:", err)
+      setSubmitError(err?.message || "An unexpected error occurred during submission. Please try again.")
+    }
   }
 
   const getInputType = (type: string) => {
@@ -270,6 +296,15 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
                 <p className="text-sm text-neutral-500 max-w-xs">
                   This form does not have any fields configured yet. Please check back later.
                 </p>
+              </div>
+            )}
+
+            {submitError && (
+              <div className="p-3.5 rounded-xl border border-destructive/20 bg-destructive/10 text-destructive text-sm flex items-start gap-2.5 animate-fadeIn">
+                <AlertCircleIcon className="size-5 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <span className="font-semibold text-destructive">Submission Error:</span> {submitError}
+                </div>
               </div>
             )}
           </CardContent>
