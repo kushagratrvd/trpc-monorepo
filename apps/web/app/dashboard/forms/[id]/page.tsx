@@ -35,6 +35,7 @@ import {
     PlusIcon,
     PencilIcon,
     Trash2Icon,
+    InboxIcon,
 } from "lucide-react"
 
 const FIELD_TYPES = ["TEXT", "NUMBER", "EMAIL", "YES_NO", "PASSWORD"] as const
@@ -163,10 +164,18 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
                         ? `${fields.fields.length} field${fields.fields.length !== 1 ? "s" : ""}`
                         : "Loading..."}
                 </p>
-                <Button size="sm" onClick={() => setCreateOpen(true)}>
-                    <PlusIcon className="size-4 mr-1" />
-                    Add Field
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button asChild size="sm" variant="outline" className="border-neutral-800 text-neutral-350 hover:bg-neutral-800">
+                        <Link href={`/dashboard/forms/${formId}/submissions`}>
+                            <InboxIcon className="size-4 mr-1.5" />
+                            View Submissions
+                        </Link>
+                    </Button>
+                    <Button size="sm" onClick={() => setCreateOpen(true)}>
+                        <PlusIcon className="size-4 mr-1" />
+                        Add Field
+                    </Button>
+                </div>
             </div>
 
             {/* Field list */}

@@ -15,6 +15,8 @@ import {
     getFormOutputModel,
     submitFormInputModel,
     submitFormOutputModel,
+    getFormSubmissionsOutputModel,
+    getFormSubmissionsInputModel,
 } from "./model";
 import { generatePath } from "../../utils/path-generator";
 import { formService, formFieldService, formSubmissionService } from "../../services";
@@ -135,5 +137,20 @@ export const formRouter = router({
         .output(submitFormOutputModel)
         .mutation(async ({ input }) => {
             return formSubmissionService.submitForm(input)
+        }),
+
+    getFormSubmissions: authenticatedProcedure.meta({
+        openapi: {
+            method: 'GET',
+            path: getPath('/getFormSubmissions'),
+            tags: TAGS,
+            protect: true,
+        }
+    })
+        .input(getFormSubmissionsInputModel)
+        .output(getFormSubmissionsOutputModel)
+        .query(async ({ input }) => {
+            const { formId } = input
+            return formSubmissionService.getFormSubmissions({ formId })
         }),
 });

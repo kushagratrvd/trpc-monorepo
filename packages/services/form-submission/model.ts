@@ -8,4 +8,9 @@ export const submitFormInput = z.object({
     })).min(1, 'At least one field is required').describe('Array of form field values'),
 })
 
+export const getFormSubmissionsInput = z.object({
+    formId: z.string().uuid().describe('UUID of the form to get submissions for'),
+})
+
 export type SubmitFormInputType = z.infer<typeof submitFormInput>
+export type GetFormSubmissionsInputType = z.infer<typeof getFormSubmissionsInput>

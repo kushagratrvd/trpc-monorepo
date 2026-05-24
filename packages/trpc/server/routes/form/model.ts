@@ -103,3 +103,20 @@ export const submitFormInputModel = z.object({
 export const submitFormOutputModel = z.object({
     id: z.string().describe('UUID of the submitted form'),
 })
+
+export const getFormSubmissionsInputModel = z.object({
+    formId: z.string().uuid().describe('UUID of the form to get submissions for'),
+})
+
+export const getFormSubmissionsOutputModel = z.array(
+    z.object({
+        id: z.string().uuid(),
+        values: z.array(
+            z.object({
+                formFieldId: z.string().uuid(),
+                value: z.string(),
+            })
+        ).nullable(),
+        createdAt: z.date().nullable(),
+    })
+)
