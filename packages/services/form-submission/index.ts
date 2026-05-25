@@ -77,6 +77,27 @@ class FormSubmissionService {
                     if (val !== 'true' && val !== 'false') {
                         throw ApiError.badRequest(`Field "${field.label}" must be yes or no`, 'INVALID_BOOLEAN');
                     }
+                } else if (field.type === 'SINGLE_SELECT') {
+                    if (field.options && field.options.length > 0 && !field.options.includes(val!)) {
+                        throw ApiError.badRequest(`Field "${field.label}" value must be one of the provided options`, 'INVALID_OPTION');
+                    }
+                } else if (field.type === 'MULTI_SELECT') {
+                    if (field.options && field.options.length > 0) {
+                        try {
+                            const selectedOptions = JSON.parse(val!);
+                            if (!Array.isArray(selectedOptions)) {
+                                throw new Error();
+                            }
+                            for (const selected of selectedOptions) {
+                                if (!field.options.includes(selected)) {
+                                    throw ApiError.badRequest(`Field "${field.label}" contains an invalid option: ${selected}`, 'INVALID_MULTI_OPTION');
+                                }
+                            }
+                        } catch (e) {
+                            if (e instanceof ApiError) throw e;
+                            throw ApiError.badRequest(`Field "${field.label}" must be a valid JSON array of options`, 'INVALID_MULTI_SELECT_FORMAT');
+                        }
+                    }
                 }
             }
         }

@@ -9,6 +9,9 @@ import { Switch } from "~/components/ui/switch"
 import { Field, FieldLabel, FieldDescription, FieldError } from "~/components/ui/field"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "~/components/ui/card"
 import { Skeleton } from "~/components/ui/skeleton"
+import { Textarea } from "~/components/ui/textarea"
+import { Checkbox } from "~/components/ui/checkbox"
+import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group"
 import { CheckCircle2Icon, AlertCircleIcon, FileTextIcon, HelpCircleIcon } from "lucide-react"
 
 type PublicFormPageProps = {
@@ -51,6 +54,12 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
         let stringValue = ""
         if (field.type === "YES_NO") {
           stringValue = rawValue ? "true" : "false"
+        } else if (field.type === "MULTI_SELECT") {
+          if (Array.isArray(rawValue)) {
+            stringValue = JSON.stringify(rawValue);
+          } else {
+            stringValue = "[]"
+          }
         } else if (rawValue !== undefined && rawValue !== null) {
           stringValue = String(rawValue)
         }
@@ -271,6 +280,133 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
                           />
                         )}
                       />
+                    </Field>
+                  )
+                }
+
+                if (field.type === 'LONG_TEXT') {
+                  return (
+                    <Field key={field.id} className="space-y-2">
+                      <FieldLabel htmlFor={field.labelKey} className="text-sm font-medium flex items-center">
+                        {field.label}
+                        {field.isRequired && <span className="text-destructive font-bold ml-1" title="Required">*</span>}
+                      </FieldLabel>
+                      
+                      <Textarea
+                        id={field.labelKey}
+                        placeholder={field.placeholder ?? undefined}
+                        className={`bg-neutral-950/30 border-neutral-800 text-foreground transition-all duration-200 placeholder:text-neutral-600 focus:border-indigo-500/70 focus:ring-indigo-500/20 ${errors[field.labelKey] ? 'border-destructive/60 focus:border-destructive' : ''}`}
+                        rows={4}
+                        {...register(field.labelKey, {
+                          required: field.isRequired ? `${field.label} is required` : false,
+                        })}
+                      />
+
+                      {field.description && (
+                        <FieldDescription className="text-xs text-muted-foreground">
+                          {field.description}
+                        </FieldDescription>
+                      )}
+
+                      {errors[field.labelKey] && (
+                        <FieldError className="text-xs font-medium text-destructive mt-1 flex items-center gap-1 animate-fadeIn">
+                          <AlertCircleIcon className="size-3.5" />
+                          {errors[field.labelKey]?.message as string}
+                        </FieldError>
+                      )}
+                    </Field>
+                  )
+                }
+
+                if (field.type === 'SINGLE_SELECT') {
+                  return (
+                    <Field key={field.id} className="space-y-3">
+                      <FieldLabel className="text-sm font-medium flex items-center">
+                        {field.label}
+                        {field.isRequired && <span className="text-destructive font-bold ml-1" title="Required">*</span>}
+                      </FieldLabel>
+                      {field.description && <FieldDescription className="text-xs text-muted-foreground">{field.description}</FieldDescription>}
+                      
+                      <Controller
+                        control={control}
+                        name={field.labelKey}
+                        rules={{ required: field.isRequired ? `${field.label} is required` : false }}
+                        render={({ field: { value, onChange } }) => (
+                          <RadioGroup onValueChange={onChange} value={value} className="space-y-2">
+                            {field.options?.map((option) => (
+                              <div key={option} className="flex items-center space-x-2">
+                                <RadioGroupItem value={option} id={`${field.labelKey}-${option}`} className="border-neutral-700 text-indigo-500" />
+                                <label htmlFor={`${field.labelKey}-${option}`} className="text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-neutral-300">
+                                  {option}
+                                </label>
+                              </div>
+                            ))}
+                          </RadioGroup>
+                        )}
+                      />
+                      
+                      {errors[field.labelKey] && (
+                        <FieldError className="text-xs font-medium text-destructive mt-1 flex items-center gap-1 animate-fadeIn">
+                          <AlertCircleIcon className="size-3.5" />
+                          {errors[field.labelKey]?.message as string}
+                        </FieldError>
+                      )}
+                    </Field>
+                  )
+                }
+
+                if (field.type === 'MULTI_SELECT') {
+                  return (
+                    <Field key={field.id} className="space-y-3">
+                      <FieldLabel className="text-sm font-medium flex items-center">
+                        {field.label}
+                        {field.isRequired && <span className="text-destructive font-bold ml-1" title="Required">*</span>}
+                      </FieldLabel>
+                      {field.description && <FieldDescription className="text-xs text-muted-foreground">{field.description}</FieldDescription>}
+                      
+                      <Controller
+                        control={control}
+                        name={field.labelKey}
+                        defaultValue={[]}
+                        rules={{
+                          validate: (val) => {
+                            if (field.isRequired && (!val || val.length === 0)) return `${field.label} is required`
+                            return true
+                          }
+                        }}
+                        render={({ field: { value, onChange } }) => (
+                          <div className="space-y-2">
+                            {field.options?.map((option) => {
+                              const checked = value?.includes(option);
+                              return (
+                                <div key={option} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`${field.labelKey}-${option}`}
+                                    checked={checked}
+                                    onCheckedChange={(isChecked) => {
+                                      const newValue = isChecked
+                                        ? [...(value || []), option]
+                                        : (value || []).filter((v: string) => v !== option);
+                                      onChange(newValue);
+                                    }}
+                                    className="border-neutral-700 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
+                                  />
+                                  <label htmlFor={`${field.labelKey}-${option}`} className="text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-neutral-300">
+                                    {option}
+                                  </label>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                      />
+                      
+                      {errors[field.labelKey] && (
+                        <FieldError className="text-xs font-medium text-destructive mt-1 flex items-center gap-1 animate-fadeIn">
+                          <AlertCircleIcon className="size-3.5" />
+                          {errors[field.labelKey]?.message as string}
+                        </FieldError>
+                      )}
                     </Field>
                   )
                 }

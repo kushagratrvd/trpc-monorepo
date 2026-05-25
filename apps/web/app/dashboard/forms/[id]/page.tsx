@@ -41,15 +41,18 @@ import {
     BarChart3Icon,
 } from "lucide-react"
 
-const FIELD_TYPES = ["TEXT", "NUMBER", "EMAIL", "YES_NO", "PASSWORD"] as const
+const FIELD_TYPES = ["TEXT", "LONG_TEXT", "NUMBER", "EMAIL", "YES_NO", "PASSWORD", "SINGLE_SELECT", "MULTI_SELECT"] as const
 type FieldType = (typeof FIELD_TYPES)[number]
 
 const FIELD_TYPE_LABELS: Record<FieldType, string> = {
-    TEXT: "Text",
+    TEXT: "Short Text",
+    LONG_TEXT: "Long Text",
     NUMBER: "Number",
     EMAIL: "Email",
     YES_NO: "Yes / No",
     PASSWORD: "Password",
+    SINGLE_SELECT: "Single Select",
+    MULTI_SELECT: "Multi Select",
 }
 
 type CreateFieldValues = {
@@ -58,6 +61,7 @@ type CreateFieldValues = {
     description: string
     placeholder: string
     isRequired: boolean
+    options: string
 }
 
 type EditFieldValues = {
@@ -66,6 +70,7 @@ type EditFieldValues = {
     description: string
     placeholder: string
     isRequired: boolean
+    options: string
 }
 
 export default function FormBuilderPage({ params }: { params: Promise<{ id: string }>; }) {
@@ -88,10 +93,13 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
             description: "",
             placeholder: "",
             isRequired: false,
+            options: "",
         },
     })
 
     const onCreateSubmit: SubmitHandler<CreateFieldValues> = async (data) => {
+        const needsOptions = data.type === 'SINGLE_SELECT' || data.type === 'MULTI_SELECT';
+        const parsedOptions = needsOptions && data.options.trim() ? data.options.split(',').map(o => o.trim()).filter(Boolean) : undefined;
         await createFieldAsync({
             formId,
             label: data.label,
@@ -99,6 +107,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
             description: data.description || undefined,
             placeholder: data.placeholder || undefined,
             isRequired: data.isRequired,
+            options: parsedOptions,
         })
         createForm.reset()
         setCreateOpen(false)
@@ -113,6 +122,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
             description: "",
             placeholder: "",
             isRequired: false,
+            options: "",
         },
     })
 
@@ -123,6 +133,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
         description?: string | null
         placeholder?: string | null
         isRequired: boolean
+        options?: string[] | null
     }) => {
         setEditingFieldId(field.id)
         editForm.reset({
@@ -131,12 +142,15 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
             description: field.description ?? "",
             placeholder: field.placeholder ?? "",
             isRequired: field.isRequired,
+            options: field.options ? field.options.join(', ') : "",
         })
         setEditOpen(true)
     }
 
     const onEditSubmit: SubmitHandler<EditFieldValues> = async (data) => {
         if (!editingFieldId) return
+        const needsOptions = data.type === 'SINGLE_SELECT' || data.type === 'MULTI_SELECT';
+        const parsedOptions = needsOptions && data.options.trim() ? data.options.split(',').map(o => o.trim()).filter(Boolean) : undefined;
         await updateFieldAsync({
             fieldId: editingFieldId,
             label: data.label,
@@ -144,6 +158,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
             description: data.description || undefined,
             placeholder: data.placeholder || undefined,
             isRequired: data.isRequired,
+            options: parsedOptions,
         })
         setEditOpen(false)
     }
@@ -259,6 +274,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
                                             description?: string | null
                                             placeholder?: string | null
                                             isRequired: boolean
+                                            options?: string[] | null
                                         })}
                                     >
                                         <PencilIcon className="size-4" />
@@ -334,6 +350,17 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
                                     </SelectContent>
                                 </Select>
                             </Field>
+
+                            {(createForm.watch("type") === 'SINGLE_SELECT' || createForm.watch("type") === 'MULTI_SELECT') && (
+                                <Field>
+                                    <FieldLabel htmlFor="create-options">Options (comma separated)</FieldLabel>
+                                    <Input
+                                        id="create-options"
+                                        placeholder="Option 1, Option 2, Option 3"
+                                        {...createForm.register("options")}
+                                    />
+                                </Field>
+                            )}
 
                             <Field>
                                 <FieldLabel htmlFor="create-placeholder">Placeholder</FieldLabel>
@@ -431,6 +458,17 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
                                     </SelectContent>
                                 </Select>
                             </Field>
+
+                            {(editForm.watch("type") === 'SINGLE_SELECT' || editForm.watch("type") === 'MULTI_SELECT') && (
+                                <Field>
+                                    <FieldLabel htmlFor="edit-options">Options (comma separated)</FieldLabel>
+                                    <Input
+                                        id="edit-options"
+                                        placeholder="Option 1, Option 2, Option 3"
+                                        {...editForm.register("options")}
+                                    />
+                                </Field>
+                            )}
 
                             <Field>
                                 <FieldLabel htmlFor="edit-placeholder">Placeholder</FieldLabel>

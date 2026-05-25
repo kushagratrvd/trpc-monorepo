@@ -33,7 +33,7 @@ export const listPublicFormsOutputModel = z.array(
     })
 )
 
-const fieldType = z.enum(['TEXT', 'NUMBER', 'EMAIL', 'YES_NO', 'PASSWORD'])
+const fieldType = z.enum(['TEXT', 'NUMBER', 'EMAIL', 'YES_NO', 'PASSWORD', 'LONG_TEXT', 'SINGLE_SELECT', 'MULTI_SELECT'])
 
 const formFieldObject = z.object({
     id: z.string().uuid().describe('UUID of the field'),
@@ -44,6 +44,7 @@ const formFieldObject = z.object({
     placeholder: z.string().nullable().optional().describe('Placeholder for the field'),
     isRequired: z.boolean().describe('Whether the field is required'),
     index: z.string().describe('Fractional index for ordering'),
+    options: z.array(z.string()).nullable().optional().describe('Selectable options for select fields'),
 })
 
 export const getFieldsInputModel = z.object({
@@ -61,6 +62,7 @@ export const createFieldInputModel = z.object({
     description: z.string().max(300).optional().describe('Description of the field'),
     placeholder: z.string().max(300).optional().describe('Placeholder for the field'),
     isRequired: z.boolean().optional().default(false).describe('Whether the field is required'),
+    options: z.array(z.string()).optional().describe('Selectable options for select fields'),
 })
 
 export const createFieldOutputModel = z.object({
@@ -85,6 +87,7 @@ export const updateFieldInputModel = z.object({
     description: z.string().max(300).optional().describe('Description of the field'),
     placeholder: z.string().max(300).optional().describe('Placeholder for the field'),
     isRequired: z.boolean().optional().default(false).describe('Whether the field is required'),
+    options: z.array(z.string()).optional().describe('Selectable options for select fields'),
 })
 
 export const updateFieldOutputModel = z.object({

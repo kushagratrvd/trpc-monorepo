@@ -31,7 +31,7 @@ class FormFieldService {
     }
 
     public async createField(payload: CreateFieldInputType) {
-        const { label, type, formId, description, placeholder, isRequired } =
+        const { label, type, formId, description, placeholder, isRequired, options } =
             await createFieldInput.parseAsync(payload)
 
         const labelKey = toLabelKey(label)
@@ -46,6 +46,7 @@ class FormFieldService {
             placeholder,
             isRequired,
             index,
+            options,
         }).returning({ id: formFieldsTable.id })
 
         if (!result || result.length === 0 || !result[0]?.id) {
@@ -65,6 +66,7 @@ class FormFieldService {
         if ('description' in updates) patch.description = updates.description ?? null
         if ('placeholder' in updates) patch.placeholder = updates.placeholder ?? null
         if (updates.isRequired !== undefined) patch.isRequired = updates.isRequired
+        if (updates.options !== undefined) patch.options = updates.options
 
         if (Object.keys(patch).length === 0) {
             throw ApiError.badRequest('No fields to update', 'NO_FIELDS_TO_UPDATE')
@@ -96,6 +98,7 @@ class FormFieldService {
                 placeholder: formFieldsTable.placeholder,
                 isRequired: formFieldsTable.isRequired,
                 index: formFieldsTable.index,
+                options: formFieldsTable.options,
                 createdAt: formFieldsTable.createdAt,
                 updatedAt: formFieldsTable.updatedAt,
             })
