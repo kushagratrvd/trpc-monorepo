@@ -10,6 +10,7 @@ import {
     useDeleteField,
     useGetFormForEditor,
     useUpdateFormVisibility,
+    useUpdateFormSettings,
 } from "~/hooks/api/form"
 import { Button } from "~/components/ui/button"
 import {
@@ -39,7 +40,13 @@ import {
     Trash2Icon,
     InboxIcon,
     BarChart3Icon,
+    ShareIcon,
+    CopyIcon,
+    AlertTriangleIcon,
+    CheckIcon,
+    LockIcon,
 } from "lucide-react"
+import { QRCodeCanvas } from "qrcode.react"
 
 const FIELD_TYPES = ["TEXT", "LONG_TEXT", "NUMBER", "EMAIL", "YES_NO", "PASSWORD", "SINGLE_SELECT", "MULTI_SELECT"] as const
 type FieldType = (typeof FIELD_TYPES)[number]
@@ -82,8 +89,35 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
     const { updateFieldAsync, status: updateStatus } = useUpdateField(formId)
     const { deleteFieldAsync } = useDeleteField(formId)
     const { updateFormVisibilityAsync, status: visibilityUpdateStatus } = useUpdateFormVisibility(formId)
+    const { updateFormSettingsAsync, status: settingsUpdateStatus } = useUpdateFormSettings(formId)
 
     const isLoading = isFormLoading || isFieldsLoading
+
+    const [settingsOpen, setSettingsOpen] = useState(false)
+    const [passwordInput, setPasswordInput] = useState("")
+
+    const handleSavePassword = async () => {
+        await updateFormSettingsAsync({ formId, password: passwordInput || null })
+        setSettingsOpen(false)
+    }
+
+    const openSettings = () => {
+        setPasswordInput("") // Don't show existing password for security, just let them overwrite or clear
+        setSettingsOpen(true)
+    }
+
+    const [shareOpen, setShareOpen] = useState(false)
+    const [hasCopied, setHasCopied] = useState(false)
+
+    const absoluteUrl = typeof window !== 'undefined' ? `${window.location.origin}/form/${formId}` : ''
+
+    const handleCopyLink = () => {
+        if (!absoluteUrl) return
+        navigator.clipboard.writeText(absoluteUrl).then(() => {
+            setHasCopied(true)
+            setTimeout(() => setHasCopied(false), 2000)
+        })
+    }
 
     const [createOpen, setCreateOpen] = useState(false)
     const createForm = useForm<CreateFieldValues>({
@@ -212,6 +246,18 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
                             <InboxIcon className="size-4 mr-1.5" />
                             Submissions
                         </Link>
+                    </Button>
+                    <Button asChild size="sm" variant="outline" className="border-neutral-800 text-neutral-350 hover:bg-neutral-800 bg-neutral-900/40 cursor-pointer" onClick={() => setShareOpen(true)}>
+                        <div>
+                            <ShareIcon className="size-4 mr-1.5 text-emerald-400" />
+                            Share
+                        </div>
+                    </Button>
+                    <Button asChild size="sm" variant="outline" className="border-neutral-800 text-neutral-350 hover:bg-neutral-800 bg-neutral-900/40 cursor-pointer" onClick={openSettings}>
+                        <div>
+                            <LockIcon className={`size-4 mr-1.5 ${formData?.hasPassword ? 'text-amber-400' : 'text-neutral-400'}`} />
+                            Password
+                        </div>
                     </Button>
                     <Button size="sm" onClick={() => setCreateOpen(true)}>
                         <PlusIcon className="size-4 mr-1" />
@@ -514,6 +560,86 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
                             </Button>
                         </DialogFooter>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Share Dialog */}
+            <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Share Form</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex flex-col items-center justify-center py-6 space-y-6">
+                        {formData?.visibility === "UNPUBLISHED" && (
+                            <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/20 p-3 rounded-md w-full">
+                                <AlertTriangleIcon className="size-5 text-amber-500 shrink-0 mt-0.5" />
+                                <div className="text-sm text-amber-500/90 leading-tight">
+                                    <strong className="block text-amber-500 mb-1">Form is Unpublished!</strong>
+                                    Respondents can open this link, but they cannot submit responses until you change visibility to Public or Unlisted.
+                                </div>
+                            </div>
+                        )}
+                        <div className="bg-white p-4 rounded-xl shadow-sm border border-neutral-200">
+                            <QRCodeCanvas 
+                                value={absoluteUrl} 
+                                size={180}
+                                level={"H"}
+                                fgColor={"#000000"}
+                                bgColor={"#ffffff"}
+                            />
+                        </div>
+                        <div className="w-full space-y-2">
+                            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Public Link</p>
+                            <div className="flex items-center gap-2">
+                                <Input 
+                                    readOnly 
+                                    value={absoluteUrl} 
+                                    className="bg-neutral-900 font-mono text-xs text-neutral-300"
+                                />
+                                <Button size="sm" onClick={handleCopyLink} className="shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white">
+                                    {hasCopied ? <CheckIcon className="size-4" /> : <CopyIcon className="size-4" />}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter className="sm:justify-end">
+                        <Button type="button" variant="outline" onClick={() => setShareOpen(false)}>
+                            Close
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Settings/Password Dialog */}
+            <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Form Security</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <div className="space-y-2">
+                            <FieldLabel>Password Protection</FieldLabel>
+                            <Input 
+                                type="text"
+                                placeholder={formData?.hasPassword ? "Enter new password to overwrite..." : "Enter a password to lock form..."}
+                                value={passwordInput}
+                                onChange={(e) => setPasswordInput(e.target.value)}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                {formData?.hasPassword 
+                                    ? "This form is currently password protected. Leave blank and save to remove the password."
+                                    : "Anyone with the link can view this form. Set a password to lock it."}
+                            </p>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => setSettingsOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button type="button" onClick={handleSavePassword} disabled={settingsUpdateStatus === 'pending'}>
+                            {settingsUpdateStatus === 'pending' ? 'Saving...' : 'Save Settings'}
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

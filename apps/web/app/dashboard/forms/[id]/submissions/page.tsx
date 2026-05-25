@@ -54,6 +54,13 @@ export default function SubmissionsPage({ params }: SubmissionsPageProps) {
         let display = valObj?.value ?? ""
         if (field.type === "YES_NO") {
           display = display === "true" ? "Yes" : display === "false" ? "No" : ""
+        } else if (field.type === "MULTI_SELECT") {
+          try {
+            const arr = JSON.parse(display)
+            if (Array.isArray(arr)) {
+              display = arr.join(", ")
+            }
+          } catch(e) {}
         }
         // Escape quotes for valid CSV formatting
         return `"${display.replace(/"/g, '""')}"`

@@ -23,6 +23,6 @@ export const formsTable = pgTable("forms", {
 
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").$onUpdate(() => new Date()),
+  password: varchar("password", { length: 255 }),
   visibility: formVisibilityEnum("visibility").default("UNPUBLISHED").notNull(),
 });
-

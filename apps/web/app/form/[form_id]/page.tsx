@@ -13,7 +13,8 @@ import { Skeleton } from "~/components/ui/skeleton"
 import { Textarea } from "~/components/ui/textarea"
 import { Checkbox } from "~/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group"
-import { CheckCircle2Icon, AlertCircleIcon, FileTextIcon, HelpCircleIcon } from "lucide-react"
+import { CheckCircle2Icon, AlertCircleIcon, FileTextIcon, HelpCircleIcon, LockIcon, ArrowRightIcon } from "lucide-react"
+import { trpc } from "~/trpc/client"
 
 type PublicFormPageProps = {
   params: Promise<{
@@ -27,6 +28,15 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
   const { form, isLoading, error } = useGetForm(formId)
   const { submitFormAsync } = useSubmitForm(formId)
   const [submitError, setSubmitError] = useState<string | null>(null)
+
+  const utils = trpc.useUtils()
+  const [password, setPassword] = useState("")
+  const [isUnlocked, setIsUnlocked] = useState(false)
+  const [unlockError, setUnlockError] = useState<string | null>(null)
+  const [isUnlocking, setIsUnlocking] = useState(false)
+  const [unlockedFields, setUnlockedFields] = useState<any[]>([])
+
+  const fieldsToRender = isUnlocked ? unlockedFields : (form?.fields || [])
 
   const {
     register,
@@ -72,7 +82,7 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
       
       sessionStorage.setItem(`formz_submission_${formId}`, JSON.stringify({
         formTitle: form.title,
-        fields: form.fields,
+        fields: fieldsToRender,
         data
       }))
       sessionStorage.removeItem(`draft_submission_${formId}`)
@@ -82,7 +92,7 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
 
     setSubmitError(null)
     try {
-      const submissionValues = form.fields.map((field) => {
+      const submissionValues = fieldsToRender.map((field) => {
         const rawValue = data[field.labelKey]
         let stringValue = ""
         if (field.type === "YES_NO") {
@@ -104,12 +114,13 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
 
       await submitFormAsync({
         formId,
+        password: isUnlocked ? password : undefined,
         values: submissionValues,
       })
 
       sessionStorage.setItem(`formz_submission_${formId}`, JSON.stringify({
         formTitle: form.title,
-        fields: form.fields,
+        fields: fieldsToRender,
         data
       }))
       
@@ -191,6 +202,69 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
     )
   }
 
+  const handleUnlock = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setUnlockError(null)
+    setIsUnlocking(true)
+    try {
+      const res = await utils.form.getFields.fetch({ formId, password })
+      setUnlockedFields(res.fields)
+      setIsUnlocked(true)
+    } catch (err: any) {
+      setUnlockError(err.message || "Invalid password")
+    } finally {
+      setIsUnlocking(false)
+    }
+  }
+
+  // Lock Screen State
+  if (form && form.hasPassword && !isUnlocked) {
+    return (
+      <div className="relative min-h-screen flex items-center justify-center p-4 bg-neutral-950 overflow-hidden">
+        <div className="absolute top-1/4 -left-12 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 -right-12 w-80 h-80 bg-neutral-500/5 rounded-full blur-3xl pointer-events-none" />
+
+        <Card className="relative w-full max-w-md bg-neutral-900/40 border-neutral-800/80 backdrop-blur-md overflow-hidden pt-6 shadow-2xl">
+          <div className="h-1.5 w-full bg-gradient-to-r from-amber-500 to-orange-500 absolute top-0 left-0" />
+          <form onSubmit={handleUnlock}>
+            <CardHeader className="text-center space-y-3 pb-2">
+              <div className="mx-auto p-4 rounded-full bg-amber-500/10 w-fit mb-2 border border-amber-500/20 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
+                <LockIcon className="size-8 text-amber-500" />
+              </div>
+              <CardTitle className="text-2xl font-bold tracking-tight">{form.title}</CardTitle>
+              <CardDescription className="text-sm">
+                This form is password protected.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4 space-y-4">
+              <div className="space-y-2">
+                <Input
+                  type="password"
+                  placeholder="Enter password..."
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="bg-neutral-950/50 border-neutral-800 text-center text-lg h-12 focus:border-amber-500/50 focus:ring-amber-500/20"
+                  autoFocus
+                />
+              </div>
+              {unlockError && (
+                <div className="text-sm text-destructive text-center font-medium bg-destructive/10 py-2 rounded-lg border border-destructive/20 animate-fadeIn">
+                  {unlockError}
+                </div>
+              )}
+            </CardContent>
+            <CardFooter>
+              <Button type="submit" disabled={isUnlocking || !password} className="w-full h-12 text-md font-semibold bg-amber-600 hover:bg-amber-500 text-white shadow-[0_0_15px_rgba(245,158,11,0.25)] transition-all">
+                {isUnlocking ? "Verifying..." : "Unlock Form"}
+                {!isUnlocking && <ArrowRightIcon className="size-4 ml-2" />}
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="relative min-h-screen flex items-center justify-center p-4 bg-neutral-950 overflow-hidden">
       {/* Premium Background Glow effects */}
@@ -230,8 +304,8 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
           </div>
 
           <CardContent className="pt-6 space-y-6">
-            {form.fields.length > 0 ? (
-              form.fields.map((field) => {
+            {fieldsToRender.length > 0 ? (
+              fieldsToRender.map((field) => {
                 const isYesNo = field.type === "YES_NO"
 
                 if (isYesNo) {
@@ -315,7 +389,7 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
                         rules={{ required: field.isRequired ? `${field.label} is required` : false }}
                         render={({ field: { value, onChange } }) => (
                           <RadioGroup onValueChange={onChange} value={value} className="space-y-2">
-                            {field.options?.map((option) => (
+                            {field.options?.map((option: string) => (
                               <div key={option} className="flex items-center space-x-2">
                                 <RadioGroupItem value={option} id={`${field.labelKey}-${option}`} className="border-neutral-700 text-indigo-500" />
                                 <label htmlFor={`${field.labelKey}-${option}`} className="text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-neutral-300">
@@ -358,7 +432,7 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
                         }}
                         render={({ field: { value, onChange } }) => (
                           <div className="space-y-2">
-                            {field.options?.map((option) => {
+                            {field.options?.map((option: string) => {
                               const checked = value?.includes(option);
                               return (
                                 <div key={option} className="flex items-center space-x-2">
@@ -457,7 +531,7 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
             <p className="text-xs text-neutral-500">
               Never share passwords or sensitive information.
             </p>
-            {form.fields.length > 0 && (
+            {fieldsToRender.length > 0 && (
               <Button
                 type="submit"
                 disabled={isSubmitting}

@@ -28,3 +28,10 @@ export const updateFormVisibilityInput = z.object({
 
 export type UpdateFormVisibilityInputType = z.infer<typeof updateFormVisibilityInput>
 
+export const updateFormSettingsInput = z.object({
+    formId: z.string().uuid().describe('UUID of the form'),
+    password: z.string().nullable().optional().describe('Optional password for the form'),
+})
+
+export type UpdateFormSettingsInputType = z.infer<typeof updateFormSettingsInput>
+

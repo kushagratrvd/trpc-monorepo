@@ -18,7 +18,8 @@ class FormSubmissionService {
         const formRow = await db.select({ 
             visibility: formsTable.visibility,
             title: formsTable.title,
-            creatorId: formsTable.createdBy
+            creatorId: formsTable.createdBy,
+            password: formsTable.password
         }).from(formsTable).where(eq(formsTable.id, formId));
         
         if (formRow.length === 0) {
@@ -39,6 +40,13 @@ class FormSubmissionService {
 
         if (visibility === 'UNLISTED' && !userId) {
             throw ApiError.unauthorized('You must be logged in to submit an unlisted form', 'UNAUTHORIZED')
+        }
+
+        const dbPassword = formRow[0]!.password;
+        if (dbPassword && userId !== formRow[0]!.creatorId) {
+            if (!payload.password || payload.password !== dbPassword) {
+                throw ApiError.unauthorized('Invalid or missing password for this form', 'INVALID_PASSWORD')
+            }
         }
 
         if (userId) {

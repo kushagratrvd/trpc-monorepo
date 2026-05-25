@@ -2,7 +2,7 @@
 
 import { use, useMemo } from "react"
 import Link from "next/link"
-import { useGetForm, useGetFields, useGetFormAnalytics } from "~/hooks/api/form"
+import { useGetForm, useGetFields, useGetFormAnalytics, useGetFormSubmissions } from "~/hooks/api/form"
 import { Button } from "~/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "~/components/ui/card"
 import { Badge } from "~/components/ui/badge"
@@ -14,7 +14,8 @@ import {
   SparklesIcon,
   TrendingUpIcon,
   Loader2Icon,
-  HelpCircleIcon
+  HelpCircleIcon,
+  DownloadIcon
 } from "lucide-react"
 import {
   ResponsiveContainer,
@@ -38,15 +39,50 @@ export default function AnalyticsPage({ params }: AnalyticsPageProps) {
   const { form, isLoading: formLoading } = useGetForm(formId)
   const { fields, isLoading: fieldsLoading } = useGetFields(formId)
   const { analytics, isLoading: analyticsLoading } = useGetFormAnalytics(formId)
+  const { submissions } = useGetFormSubmissions(formId)
 
   const isLoading = formLoading || fieldsLoading || analyticsLoading
   const activeFields = fields?.fields ?? []
   const hasData = analytics && analytics.totalSubmissions > 0
 
-  // 1. Calculate general stats
+  const exportToCSV = () => {
+    if (!form || activeFields.length === 0 || !submissions || submissions.length === 0) return
+
+    const headers = ["Submission ID", "Submitted At", ...activeFields.map(f => f.label)]
+    
+    const rows = submissions.map(sub => {
+      const dateStr = sub.createdAt ? new Date(sub.createdAt).toISOString() : ""
+      const values = activeFields.map(field => {
+        const valObj = sub.values?.find(v => v.formFieldId === field.id)
+        let display = valObj?.value ?? ""
+        if (field.type === "YES_NO") {
+          display = display === "true" ? "Yes" : display === "false" ? "No" : ""
+        } else if (field.type === "MULTI_SELECT") {
+          try {
+            const arr = JSON.parse(display)
+            if (Array.isArray(arr)) {
+              display = arr.join(", ")
+            }
+          } catch(e) {}
+        }
+        // Escape quotes for valid CSV formatting
+        return `"${display.replace(/"/g, '""')}"`
+      })
+      return [sub.id, dateStr, ...values].join(",")
+    })
+
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n")
+    const encodedUri = encodeURI(csvContent)
+    const link = document.createElement("a")
+    link.setAttribute("href", encodedUri)
+    link.setAttribute("download", `${form.title.toLowerCase().replace(/\s+/g, "-")}-submissions.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   const totalSubmissions = analytics?.totalSubmissions ?? 0
 
-  // 2. Average rating calculation for NUMBER fields
   const averageRatings = useMemo(() => {
     const ratings: Record<string, number> = {}
     if (!analytics || !activeFields.length) return ratings
@@ -112,6 +148,16 @@ export default function AnalyticsPage({ params }: AnalyticsPageProps) {
         </div>
         
         <div className="flex items-center gap-2 ml-auto sm:ml-0">
+          {hasData && (
+            <Button
+              size="sm"
+              onClick={exportToCSV}
+              className="bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800 hover:text-foreground shadow-sm transition-all flex items-center gap-1.5 font-medium"
+            >
+              <DownloadIcon className="size-3.5" />
+              Export to CSV
+            </Button>
+          )}
           <Badge variant="outline" className="bg-indigo-550/10 text-indigo-400 border-indigo-500/20 px-3 py-1 font-semibold flex items-center gap-1.5 text-xs">
             <SparklesIcon className="size-3" />
             SQL Optimized

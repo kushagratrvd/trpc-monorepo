@@ -1,5 +1,5 @@
 import { db, eq, asc, sql, max } from '@repo/database'
-import { formFieldsTable } from '@repo/database/schema'
+import { formFieldsTable, formsTable } from '@repo/database/schema'
 import {
     createFieldInput, type CreateFieldInputType,
     updateFieldInput, type updateFieldInputType,
@@ -86,7 +86,23 @@ class FormFieldService {
     }
 
     public async getFields(payload: getFieldsInputType) {
-        const { formId } = await getFieldsInput.parseAsync(payload)
+        const { formId, password, requestUserId } = await getFieldsInput.parseAsync(payload)
+
+        const formMeta = await db
+            .select({ createdBy: formsTable.createdBy, password: formsTable.password })
+            .from(formsTable)
+            .where(eq(formsTable.id, formId))
+            .limit(1)
+
+        if (formMeta.length > 0) {
+            const { createdBy, password: dbPassword } = formMeta[0]!
+            // If the form has a password, and the user isn't the creator, verify the password
+            if (dbPassword && requestUserId !== createdBy) {
+                if (!password || password !== dbPassword) {
+                    throw ApiError.unauthorized('Invalid or missing password for this form.')
+                }
+            }
+        }
 
         const fields = await db
             .select({

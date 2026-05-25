@@ -21,6 +21,8 @@ import {
     getFormSubmissionsInputModel,
     updateFormVisibilityInputModel,
     updateFormVisibilityOutputModel,
+    updateFormSettingsInputModel,
+    updateFormSettingsOutputModel,
     getFormAnalyticsInputModel,
     getFormAnalyticsOutputModel,
 } from "./model";
@@ -69,19 +71,28 @@ export const formRouter = router({
         return formService.listPublicForms();
     }),
 
-    getFields: authenticatedProcedure.meta({
+    getFields: publicProcedure.meta({
         openapi: {
             method: 'POST',
             path: getPath('/getFields'),
             tags: TAGS,
-            protect: true,
         }
     })
         .input(getFieldsInputModel)
         .output(getFieldsOutputModel)
-        .query(async ({ input }) => {
-            const { formId } = input
-            return formFieldService.getFields({ formId })
+        .query(async ({ input, ctx }) => {
+            let requestUserId: string | undefined = undefined;
+            const userToken = getAuthenticationCookie(ctx);
+            if (userToken) {
+                try {
+                    const { id } = await userService.verifyAndDecodeUserToken(userToken);
+                    requestUserId = id;
+                } catch (e) {
+                    // Ignore, anonymous
+                }
+            }
+            const { formId, password } = input
+            return formFieldService.getFields({ formId, password, requestUserId })
         }),
 
     createField: authenticatedProcedure.meta({
@@ -138,9 +149,19 @@ export const formRouter = router({
     })
         .input(getFormInputModel)
         .output(getFormOutputModel)
-        .query(async ({ input }) => {
+        .query(async ({ input, ctx }) => {
+            let requestUserId: string | undefined = undefined;
+            const userToken = getAuthenticationCookie(ctx);
+            if (userToken) {
+                try {
+                    const { id } = await userService.verifyAndDecodeUserToken(userToken);
+                    requestUserId = id;
+                } catch (e) {
+                    // Ignore, anonymous
+                }
+            }
             const { formId } = input
-            const form = await formService.getFormById({ formId })
+            const form = await formService.getFormById({ formId, requestUserId })
             
             if (form?.visibility === 'UNPUBLISHED') {
                 return null;
@@ -159,9 +180,9 @@ export const formRouter = router({
     })
         .input(getFormInputModel)
         .output(getFormForEditorOutputModel)
-        .query(async ({ input }) => {
+        .query(async ({ input, ctx }) => {
             const { formId } = input
-            return formService.getFormById({ formId })
+            return formService.getFormById({ formId, requestUserId: ctx.user.id })
         }),
 
     updateFormVisibility: authenticatedProcedure.meta({
@@ -176,6 +197,20 @@ export const formRouter = router({
         .output(updateFormVisibilityOutputModel)
         .mutation(async ({ input }) => {
             return formService.updateFormVisibility(input)
+        }),
+
+    updateFormSettings: authenticatedProcedure.meta({
+        openapi: {
+            method: 'POST',
+            path: getPath('/updateFormSettings'),
+            tags: TAGS,
+            protect: true,
+        }
+    })
+        .input(updateFormSettingsInputModel)
+        .output(updateFormSettingsOutputModel)
+        .mutation(async ({ input }) => {
+            return formService.updateFormSettings(input)
         }),
 
     submitForm: publicProcedure.meta({

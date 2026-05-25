@@ -1,6 +1,6 @@
 import { asc, desc, db, eq, sql } from '@repo/database'
 import { formFieldsTable, formsTable } from '@repo/database/schema'
-import { createFormInput, listFormsByUserIdInput, ListFormsByUserIdInputType, type CreateFormInputType, getFormByIdInput, type GetFormByIdInputType, updateFormVisibilityInput, type UpdateFormVisibilityInputType } from './model'
+import { createFormInput, listFormsByUserIdInput, ListFormsByUserIdInputType, type CreateFormInputType, getFormByIdInput, type GetFormByIdInputType, updateFormVisibilityInput, type UpdateFormVisibilityInputType, updateFormSettingsInput, type UpdateFormSettingsInputType } from './model'
 import { ApiError } from "../errors"
 
 class FormService {
@@ -53,8 +53,8 @@ class FormService {
         return forms;
     }
 
-    public async getFormById(payload: GetFormByIdInputType) {
-        const { formId } = await getFormByIdInput.parseAsync(payload)
+    public async getFormById(payload: GetFormByIdInputType & { requestUserId?: string }) {
+        const { formId, requestUserId } = payload
 
         const rows = await db.select({
             id: formsTable.id,
@@ -64,6 +64,7 @@ class FormService {
             createdBy: formsTable.createdBy,
             createdAt: formsTable.createdAt,
             updatedAt: formsTable.updatedAt,
+            password: formsTable.password,
             field: {
                 id: formFieldsTable.id,
                 label: formFieldsTable.label,
@@ -83,12 +84,18 @@ class FormService {
             return null
         }
 
-        const { id, title, description, visibility, createdBy, createdAt, updatedAt } = rows[0]!
-        const fields = rows
-            .filter(r => r.field?.id !== null)
-            .map(r => r.field as NonNullable<typeof r.field>)
+        const { id, title, description, visibility, createdBy, createdAt, updatedAt, password } = rows[0]!
+        const hasPassword = !!password
 
-        return { id, title, description, visibility, createdBy, createdAt, updatedAt, fields }
+        let fields: NonNullable<typeof rows[0]['field']>[] = []
+        // Only return fields if there's no password, OR if the requester is the creator
+        if (!hasPassword || requestUserId === createdBy) {
+            fields = rows
+                .filter(r => r.field?.id !== null)
+                .map(r => r.field as NonNullable<typeof r.field>)
+        }
+
+        return { id, title, description, visibility, createdBy, createdAt, updatedAt, fields, hasPassword }
     }
 
     public async updateFormVisibility(payload: UpdateFormVisibilityInputType) {
@@ -96,6 +103,16 @@ class FormService {
         
         await db.update(formsTable)
             .set({ visibility })
+            .where(eq(formsTable.id, formId))
+            
+        return { success: true }
+    }
+
+    public async updateFormSettings(payload: UpdateFormSettingsInputType) {
+        const { formId, password } = await updateFormSettingsInput.parseAsync(payload)
+        
+        await db.update(formsTable)
+            .set({ password: password || null })
             .where(eq(formsTable.id, formId))
             
         return { success: true }

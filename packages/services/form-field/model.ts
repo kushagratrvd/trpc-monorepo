@@ -28,6 +28,8 @@ export type updateFieldInputType = z.infer<typeof updateFieldInput>
 
 export const getFieldsInput = z.object({
     formId: z.string().uuid().describe('UUID of the form to fetch fields for'),
+    password: z.string().optional().describe('Optional password to unlock the fields'),
+    requestUserId: z.string().optional().describe('ID of the requesting user to bypass password if creator'),
 })
 
 export type getFieldsInputType = z.infer<typeof getFieldsInput>

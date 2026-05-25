@@ -58,9 +58,11 @@ export const useListPublicForms = () => {
     }
 }
 
-export const useGetFields = (formId: string) => {
+export const useGetFields = (formId: string, password?: string) => {
     const { data: fields, error, isFetched, isFetching, isLoading, status } = 
-        trpc.form.getFields.useQuery({ formId })
+        trpc.form.getFields.useQuery({ formId, password }, {
+            retry: false // Don't retry if unauthorized
+        })
 
     return {
         fields,
@@ -70,6 +72,17 @@ export const useGetFields = (formId: string) => {
         isLoading, 
         status
     }
+}
+
+export const useUpdateFormSettings = (formId?: string) => {
+    const utils = trpc.useUtils()
+    const { mutateAsync, status } = trpc.form.updateFormSettings.useMutation({
+        onSuccess: () => {
+            utils.form.getFormForEditor.invalidate({ formId: formId! })
+            utils.form.getForm.invalidate({ formId: formId! })
+        }
+    })
+    return { updateFormSettingsAsync: mutateAsync, status }
 }
 
 export const useCreateField = (formId: string) => {

@@ -49,6 +49,8 @@ const formFieldObject = z.object({
 
 export const getFieldsInputModel = z.object({
     formId: z.string().uuid().describe('UUID of the form'),
+    password: z.string().optional().describe('Optional password to unlock the fields'),
+    requestUserId: z.string().optional().describe('ID of the requesting user to bypass password if creator'),
 })
 
 export const getFieldsOutputModel = z.object({
@@ -105,6 +107,7 @@ export const getFormOutputModel = z.object({
     visibility: z.enum(['PUBLIC', 'UNLISTED', 'UNPUBLISHED']),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable(),
+    hasPassword: z.boolean().optional(),
     fields: z.array(formFieldObject),
 }).nullable()
 
@@ -115,6 +118,7 @@ export const getFormForEditorOutputModel = z.object({
     visibility: z.enum(['PUBLIC', 'UNLISTED', 'UNPUBLISHED']),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable(),
+    hasPassword: z.boolean().optional(),
     fields: z.array(formFieldObject),
 }).nullable()
 
@@ -127,12 +131,22 @@ export const updateFormVisibilityOutputModel = z.object({
     success: z.boolean(),
 })
 
+export const updateFormSettingsInputModel = z.object({
+    formId: z.string().uuid().describe('UUID of the form'),
+    password: z.string().nullable().optional().describe('Optional password for the form'),
+})
+
+export const updateFormSettingsOutputModel = z.object({
+    success: z.boolean(),
+})
+
 export const submitFormInputModel = z.object({
     formId: z.string().uuid().describe('UUID of the form being submitted'),
     values: z.array(z.object({
         formFieldId: z.string().uuid().describe('UUID of the form field'),
         value: z.string().describe('Value of the form field'),
-    })).min(1, 'At least one field is required').describe('Array of form field values'),
+    })).describe('Array of form field values'),
+    password: z.string().optional().describe('Optional password to unlock the submission'),
 })
 
 export const submitFormOutputModel = z.object({
