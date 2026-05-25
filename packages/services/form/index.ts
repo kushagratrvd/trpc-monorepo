@@ -1,7 +1,6 @@
-import { asc, db } from '@repo/database'
+import { asc, desc, db, eq, sql } from '@repo/database'
 import { formFieldsTable, formsTable } from '@repo/database/schema'
 import { createFormInput, listFormsByUserIdInput, ListFormsByUserIdInputType, type CreateFormInputType, getFormByIdInput, type GetFormByIdInputType, updateFormVisibilityInput, type UpdateFormVisibilityInputType } from './model'
-import { eq } from '@repo/database'
 import { ApiError } from "../errors"
 
 class FormService {
@@ -35,6 +34,23 @@ class FormService {
         }).from(formsTable).where(eq(formsTable.createdBy, userId))
 
         return { forms } 
+    }
+
+    public async listPublicForms() {
+        const forms = await db.select({
+            id: formsTable.id,
+            title: formsTable.title,
+            description: formsTable.description,
+            visibility: formsTable.visibility,
+            createdAt: formsTable.createdAt,
+            fieldCount: sql<number>`count(${formFieldsTable.id})::int`
+        }).from(formsTable)
+          .leftJoin(formFieldsTable, eq(formFieldsTable.formId, formsTable.id))
+          .where(eq(formsTable.visibility, 'PUBLIC'))
+          .groupBy(formsTable.id)
+          .orderBy(desc(formsTable.createdAt));
+        
+        return forms;
     }
 
     public async getFormById(payload: GetFormByIdInputType) {

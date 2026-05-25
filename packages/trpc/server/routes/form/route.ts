@@ -3,6 +3,7 @@ import {
     createFormInputModel,
     createFormOutputModel,
     listFormsOutputModel,
+    listPublicFormsOutputModel,
     getFieldsInputModel,
     getFieldsOutputModel,
     createFieldInputModel,
@@ -24,8 +25,9 @@ import {
     getFormAnalyticsOutputModel,
 } from "./model";
 import { generatePath } from "../../utils/path-generator";
-import { formService, formFieldService, formSubmissionService } from "../../services";
+import { formService, formFieldService, formSubmissionService, userService } from "../../services";
 import { z } from "zod";
+import { getAuthenticationCookie } from "../../utils/cookie";
 
 const TAGS = ["form"];
 const getPath = generatePath("/form");
@@ -56,6 +58,15 @@ export const formRouter = router({
     .query(async ({ ctx }) => {
         const {forms} = await formService.listFormsByUserId({userId: ctx.user.id})
         return forms
+    }),
+
+    listPublicForms: publicProcedure.meta({
+        openapi: { method: "GET", path: getPath("listPublicForms"), tags: TAGS }
+    })
+    .input(z.undefined())
+    .output(listPublicFormsOutputModel)
+    .query(async () => {
+        return formService.listPublicForms();
     }),
 
     getFields: authenticatedProcedure.meta({
@@ -176,8 +187,18 @@ export const formRouter = router({
     })
         .input(submitFormInputModel)
         .output(submitFormOutputModel)
-        .mutation(async ({ input }) => {
-            return formSubmissionService.submitForm(input)
+        .mutation(async ({ input, ctx }) => {
+            let userId: string | undefined = undefined;
+            const userToken = getAuthenticationCookie(ctx);
+            if (userToken) {
+                try {
+                    const { id } = await userService.verifyAndDecodeUserToken(userToken);
+                    userId = id;
+                } catch (e) {
+                    // Token expired or invalid, treat as anonymous
+                }
+            }
+            return formSubmissionService.submitForm({ ...input, userId })
         }),
 
     getFormSubmissions: authenticatedProcedure.meta({

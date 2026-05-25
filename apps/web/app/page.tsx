@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useUser } from "~/hooks/api/auth"
+import { useListPublicForms } from "~/hooks/api/form"
 import { Button } from "~/components/ui/button"
 import { Badge } from "~/components/ui/badge"
 import { Card, CardContent } from "~/components/ui/card"
@@ -20,6 +21,7 @@ import {
 
 export default function Home() {
   const { user, isLoading } = useUser()
+  const { publicForms, isLoading: isFormsLoading } = useListPublicForms()
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annually">("monthly")
 
   const FEATURES = [
@@ -42,27 +44,6 @@ export default function Home() {
       icon: <ZapIcon className="size-5 text-amber-400" />,
       title: "Atomic Response Storing",
       description: "Never lose a response. Structured database models capture every answer safely with transaction-level locking mechanisms."
-    }
-  ]
-
-  const TEMPLATES = [
-    {
-      title: "Startup Feedback Form",
-      category: "Feedback",
-      fields: "4 fields",
-      badgeColor: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20"
-    },
-    {
-      title: "Developer Event RSVP",
-      category: "RSVP",
-      fields: "5 fields",
-      badgeColor: "bg-purple-500/10 text-purple-400 border-purple-500/20"
-    },
-    {
-      title: "Secure Customer Inquiry",
-      category: "Support",
-      fields: "3 fields",
-      badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
     }
   ]
 
@@ -274,26 +255,42 @@ export default function Home() {
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-6">
-            {TEMPLATES.map((tpl, i) => (
-              <div
-                key={i}
-                className="group relative rounded-xl border border-neutral-800 bg-neutral-900/10 p-5 hover:border-neutral-700/60 transition-all duration-200 cursor-pointer hover:shadow-[0_0_15px_rgba(99,102,241,0.05)]"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <Badge variant="secondary" className={`${tpl.badgeColor} border text-xs font-semibold px-2 py-0.5 rounded`}>
-                    {tpl.category}
-                  </Badge>
-                  <span className="text-xs text-neutral-500 font-medium">{tpl.fields}</span>
+            {isFormsLoading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="rounded-xl border border-neutral-800 bg-neutral-900/30 p-5 animate-pulse">
+                  <div className="flex justify-between mb-4">
+                    <div className="h-5 w-20 bg-neutral-800 rounded" />
+                    <div className="h-4 w-12 bg-neutral-800 rounded" />
+                  </div>
+                  <div className="h-6 w-3/4 bg-neutral-800 rounded mb-2" />
+                  <div className="h-4 w-full bg-neutral-800 rounded" />
                 </div>
-                <h3 className="font-bold text-lg text-foreground mb-1 flex items-center group-hover:text-indigo-400 transition-colors">
-                  {tpl.title}
-                  <ChevronRightIcon className="size-4 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all ml-1.5" />
-                </h3>
-                <p className="text-xs text-muted-foreground leading-normal">
-                  Interactive responsive layout pre-wired to capture values securely.
-                </p>
+              ))
+            ) : publicForms && publicForms.length > 0 ? (
+              publicForms.map((form) => (
+                <Link href={`/form/${form.id}`} key={form.id}>
+                  <div className="group relative rounded-xl border border-neutral-800 bg-neutral-900/10 p-5 hover:border-neutral-700/60 transition-all duration-200 cursor-pointer hover:shadow-[0_0_15px_rgba(99,102,241,0.05)] h-full flex flex-col">
+                    <div className="flex justify-between items-start mb-4">
+                      <Badge variant="secondary" className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 border text-xs font-semibold px-2 py-0.5 rounded">
+                        Public Form
+                      </Badge>
+                      <span className="text-xs text-neutral-500 font-medium">{form.fieldCount} fields</span>
+                    </div>
+                    <h3 className="font-bold text-lg text-foreground mb-1 flex items-center group-hover:text-indigo-400 transition-colors line-clamp-1">
+                      {form.title}
+                      <ChevronRightIcon className="size-4 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all ml-1.5" />
+                    </h3>
+                    <p className="text-xs text-muted-foreground leading-normal line-clamp-2 mt-auto pt-2">
+                      {form.description || "Interactive responsive layout pre-wired to capture values securely."}
+                    </p>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <div className="col-span-full text-center py-10 border border-dashed border-neutral-800 rounded-xl">
+                <p className="text-neutral-500">No public forms available yet.</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </section>

@@ -1,5 +1,5 @@
-import { db, desc, eq, sql } from "@repo/database";
-import { formSubmissionTable, formsTable } from "@repo/database/schema";
+import { db, desc, eq, sql, and } from "@repo/database";
+import { formSubmissionTable, formsTable, formFieldsTable } from "@repo/database/schema";
 import { ApiError } from "../errors";
 
 import {
@@ -10,21 +10,80 @@ import {
 } from './model'
 
 class FormSubmissionService {
-    public async submitForm(payload: SubmitFormInputType){
+    public async submitForm(payload: SubmitFormInputType & { userId?: string }){
         const { formId, values } = await submitFormInput.parseAsync(payload)
+        const { userId } = payload;
         
         const formRow = await db.select({ visibility: formsTable.visibility }).from(formsTable).where(eq(formsTable.id, formId));
         if (formRow.length === 0) {
             throw ApiError.notFound('Form not found', 'FORM_NOT_FOUND')
         }
         
-        if (formRow[0]!.visibility === 'UNPUBLISHED') {
+        const visibility = formRow[0]!.visibility;
+        
+        if (visibility === 'UNPUBLISHED') {
             throw ApiError.forbidden('Form is unpublished and cannot accept submissions', 'FORM_UNPUBLISHED')
+        }
+
+        if (visibility === 'UNLISTED' && !userId) {
+            throw ApiError.unauthorized('You must be logged in to submit an unlisted form', 'UNAUTHORIZED')
+        }
+
+        if (userId) {
+            const existingSubmissions = await db.select({ id: formSubmissionTable.id })
+                .from(formSubmissionTable)
+                .where(and(
+                    eq(formSubmissionTable.formId, formId),
+                    eq(formSubmissionTable.submittedBy, userId)
+                ))
+                .limit(1);
+
+            if (existingSubmissions.length > 0) {
+                throw ApiError.conflict('You have already submitted a response to this form', 'ALREADY_SUBMITTED')
+            }
+        }
+
+        // Defense-in-depth: Validate submitted fields against actual form schema
+        const formFields = await db.select().from(formFieldsTable).where(eq(formFieldsTable.formId, formId));
+        const activeFieldMap = new Map(formFields.map(f => [f.id, f]));
+        const submittedValuesMap = new Map(values.map(v => [v.formFieldId, v.value]));
+
+        // Check for unknown fields
+        for (const val of values) {
+            if (!activeFieldMap.has(val.formFieldId)) {
+                throw ApiError.badRequest(`Unknown form field: ${val.formFieldId}`, 'INVALID_FIELD');
+            }
+        }
+
+        // Enforce required fields and formats
+        for (const field of formFields) {
+            const val = submittedValuesMap.get(field.id);
+            const isProvided = val !== undefined && val.trim() !== '';
+
+            if (field.isRequired && !isProvided) {
+                throw ApiError.badRequest(`Field "${field.label}" is required`, 'REQUIRED_FIELD_MISSING');
+            }
+
+            if (isProvided) {
+                if (field.type === 'EMAIL') {
+                    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val!)) {
+                        throw ApiError.badRequest(`Field "${field.label}" must be a valid email`, 'INVALID_EMAIL');
+                    }
+                } else if (field.type === 'NUMBER') {
+                    if (isNaN(Number(val))) {
+                        throw ApiError.badRequest(`Field "${field.label}" must be a number`, 'INVALID_NUMBER');
+                    }
+                } else if (field.type === 'YES_NO') {
+                    if (val !== 'true' && val !== 'false') {
+                        throw ApiError.badRequest(`Field "${field.label}" must be yes or no`, 'INVALID_BOOLEAN');
+                    }
+                }
+            }
         }
         
         const result = await db
             .insert(formSubmissionTable)
-            .values({ formId, values })
+            .values({ formId, values, submittedBy: userId || null })
             .returning({ id: formSubmissionTable.id })
 
         if(!result || result.length === 0 || !result[0]?.id) {

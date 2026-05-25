@@ -22,6 +22,16 @@ export const listFormsOutputModel = z.array(
     })
 ).describe('List of forms')
 
+export const listPublicFormsOutputModel = z.array(
+    z.object({
+        id: z.string().uuid(),
+        title: z.string(),
+        description: z.string().nullable().optional(),
+        visibility: z.enum(['PUBLIC', 'UNLISTED', 'UNPUBLISHED']),
+        fieldCount: z.number(),
+        createdAt: z.date().nullable(),
+    })
+)
 
 const fieldType = z.enum(['TEXT', 'NUMBER', 'EMAIL', 'YES_NO', 'PASSWORD'])
 

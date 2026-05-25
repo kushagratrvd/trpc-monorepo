@@ -8,10 +8,12 @@ import {
   numeric,
   pgEnum,
   unique,
-  json
+  json,
+  uniqueIndex
 } from "drizzle-orm/pg-core";
 import { formsTable } from "./form";
 import { formFieldsTable } from "./form-field";
+import { usersTable } from "./user";
 
 export interface FormSubmissionValue {
   formFieldId: string
@@ -28,6 +30,12 @@ export const formSubmissionTable = pgTable("form_submissions", {
 
   values: json("values").$type<FormSubmissionValue[]>().notNull(),
 
+  submittedBy: uuid('submitted_by').references(() => usersTable.id, { onDelete: 'cascade' }),
+
   createdAt: timestamp("created_at").defaultNow(),
+}, (table) => {
+  return {
+    uniqueFormIdAndSubmittedBy: uniqueIndex("form_submissions_form_id_submitted_by_idx").on(table.formId, table.submittedBy)
+  }
 })
 

@@ -44,6 +44,20 @@ export const useListForms = () => {
     }
 }
 
+export const useListPublicForms = () => {
+    const { data: publicForms, error, isFetched, isFetching, isLoading, status } = 
+        trpc.form.listPublicForms.useQuery()
+
+    return {
+        publicForms, 
+        error,
+        isFetched,
+        isFetching, 
+        isLoading, 
+        status
+    }
+}
+
 export const useGetFields = (formId: string) => {
     const { data: fields, error, isFetched, isFetching, isLoading, status } = 
         trpc.form.getFields.useQuery({ formId })
