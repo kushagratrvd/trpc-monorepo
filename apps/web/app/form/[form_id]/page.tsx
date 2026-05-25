@@ -1,6 +1,7 @@
 "use client"
 
-import { use, useState } from "react"
+import { use, useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { useForm, Controller } from "react-hook-form"
 import { useGetForm, useSubmitForm } from "~/hooks/api/form"
 import { Button } from "~/components/ui/button"
@@ -22,18 +23,44 @@ type PublicFormPageProps = {
 
 export default function PublicFormPage({ params }: PublicFormPageProps) {
   const { form_id: formId } = use(params)
+  const router = useRouter()
   const { form, isLoading, error } = useGetForm(formId)
   const { submitFormAsync } = useSubmitForm(formId)
-  const [submitted, setSubmitted] = useState(false)
-  const [submittedData, setSubmittedData] = useState<Record<string, any> | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   const {
     register,
     handleSubmit,
     control,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm()
+
+  // Hydrate from draft
+  useEffect(() => {
+    const draft = sessionStorage.getItem(`draft_submission_${formId}`)
+    if (draft) {
+      try {
+        const parsed = JSON.parse(draft)
+        Object.keys(parsed).forEach(key => {
+          if (parsed[key] !== undefined) {
+            setValue(key, parsed[key])
+          }
+        })
+      } catch (e) {
+        console.error("Failed to parse draft", e)
+      }
+    }
+  }, [formId, setValue])
+
+  // Auto-save draft
+  useEffect(() => {
+    const subscription = watch((value) => {
+      sessionStorage.setItem(`draft_submission_${formId}`, JSON.stringify(value))
+    })
+    return () => subscription.unsubscribe()
+  }, [watch, formId])
 
   const onSubmit = async (data: Record<string, any>) => {
     if (!form) return
@@ -42,8 +69,14 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
     // Show fake success without actually saving anything.
     if (data.__hp_website) {
       await new Promise((r) => setTimeout(r, 800))
-      setSubmittedData(data)
-      setSubmitted(true)
+      
+      sessionStorage.setItem(`formz_submission_${formId}`, JSON.stringify({
+        formTitle: form.title,
+        fields: form.fields,
+        data
+      }))
+      sessionStorage.removeItem(`draft_submission_${formId}`)
+      router.push(`/form/${formId}/success`)
       return
     }
 
@@ -74,8 +107,14 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
         values: submissionValues,
       })
 
-      setSubmittedData(data)
-      setSubmitted(true)
+      sessionStorage.setItem(`formz_submission_${formId}`, JSON.stringify({
+        formTitle: form.title,
+        fields: form.fields,
+        data
+      }))
+      
+      sessionStorage.removeItem(`draft_submission_${formId}`)
+      router.push(`/form/${formId}/success`)
     } catch (err: any) {
       console.error("Submission failed:", err)
       setSubmitError(err?.message || "An unexpected error occurred during submission. Please try again.")
@@ -145,63 +184,6 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
             </p>
             <Button variant="outline" onClick={() => window.location.reload()}>
               Retry Loading
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  // Success State
-  if (submitted) {
-    return (
-      <div className="relative min-h-screen flex items-center justify-center p-4 bg-neutral-950 overflow-hidden">
-        <div className="absolute top-1/4 -left-12 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-1/4 -right-12 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <Card className="relative w-full max-w-lg bg-neutral-900/40 border-neutral-800/80 backdrop-blur-md overflow-hidden pt-6 shadow-2xl">
-          <div className="h-1.5 w-full bg-gradient-to-r from-emerald-500 to-teal-500 absolute top-0 left-0" />
-          <CardContent className="pt-8 flex flex-col items-center text-center">
-            <div className="p-4 rounded-full bg-emerald-500/15 text-emerald-400 mb-6 shadow-[0_0_15px_rgba(16,185,129,0.2)] animate-pulse">
-              <CheckCircle2Icon className="size-14" />
-            </div>
-            <h2 className="text-2xl font-bold tracking-tight mb-2">Response Submitted!</h2>
-            <p className="text-sm text-emerald-400/80 font-medium mb-3">
-              Thank you for filling out &ldquo;{form.title}&rdquo;
-            </p>
-            <p className="text-sm text-muted-foreground max-w-sm mb-8">
-              Your submission has been captured successfully. You can close this tab or fill out the form again.
-            </p>
-
-            {/* Quick summary of submitted values */}
-            <div className="w-full text-left bg-neutral-950/50 rounded-xl border border-neutral-800/50 p-4 space-y-3.5 mb-6 max-h-60 overflow-y-auto">
-              <div className="text-xs font-semibold text-neutral-400 uppercase tracking-wider border-b border-neutral-800/80 pb-2 flex items-center gap-1.5">
-                <FileTextIcon className="size-3.5 text-indigo-400" />
-                Submitted Summary
-              </div>
-              {form.fields.map((field) => {
-                const val = submittedData?.[field.labelKey]
-                return (
-                  <div key={field.id} className="text-sm flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 border-b border-neutral-900/50 pb-2 last:border-0 last:pb-0">
-                    <span className="font-medium text-neutral-300 truncate max-w-xs">{field.label}:</span>
-                    <span className="text-neutral-400 bg-neutral-900/60 px-2 py-0.5 rounded text-xs border border-neutral-800/30">
-                      {field.type === "YES_NO" ? (val ? "Yes" : "No") : val || "—"}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setSubmitted(false)
-                setSubmittedData(null)
-              }}
-              className="text-neutral-400 border-neutral-800 hover:bg-neutral-800/60 hover:text-foreground"
-            >
-              Fill out another response
             </Button>
           </CardContent>
         </Card>

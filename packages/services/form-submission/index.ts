@@ -1,6 +1,7 @@
 import { db, desc, eq, sql, and } from "@repo/database";
-import { formSubmissionTable, formsTable, formFieldsTable } from "@repo/database/schema";
+import { formSubmissionTable, formsTable, formFieldsTable, usersTable } from "@repo/database/schema";
 import { ApiError } from "../errors";
+import EmailService from "../email";
 
 import {
     submitFormInput,
@@ -14,12 +15,23 @@ class FormSubmissionService {
         const { formId, values } = await submitFormInput.parseAsync(payload)
         const { userId } = payload;
         
-        const formRow = await db.select({ visibility: formsTable.visibility }).from(formsTable).where(eq(formsTable.id, formId));
+        const formRow = await db.select({ 
+            visibility: formsTable.visibility,
+            title: formsTable.title,
+            creatorId: formsTable.createdBy
+        }).from(formsTable).where(eq(formsTable.id, formId));
+        
         if (formRow.length === 0) {
             throw ApiError.notFound('Form not found', 'FORM_NOT_FOUND')
         }
         
         const visibility = formRow[0]!.visibility;
+        
+        let creatorEmail: string | undefined;
+        if (formRow[0]!.creatorId) {
+            const creatorRow = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, formRow[0]!.creatorId));
+            creatorEmail = creatorRow[0]?.email;
+        }
         
         if (visibility === 'UNPUBLISHED') {
             throw ApiError.forbidden('Form is unpublished and cannot accept submissions', 'FORM_UNPUBLISHED')
@@ -109,6 +121,15 @@ class FormSubmissionService {
 
         if(!result || result.length === 0 || !result[0]?.id) {
             throw ApiError.internal('Failed to submit form', 'SUBMISSION_FAILED')
+        }
+        
+        // Fire and forget email notification
+        if (creatorEmail) {
+            const prettyValues = formFields.map(f => {
+                const val = submittedValuesMap.get(f.id);
+                return { label: f.label, value: val || '' };
+            });
+            EmailService.sendNewSubmissionNotification(creatorEmail, formRow[0]!.title, prettyValues).catch(console.error);
         }
         
         return { id: result[0].id }

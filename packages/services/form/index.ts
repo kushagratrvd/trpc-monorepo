@@ -61,6 +61,7 @@ class FormService {
             title: formsTable.title,
             description: formsTable.description,
             visibility: formsTable.visibility,
+            createdBy: formsTable.createdBy,
             createdAt: formsTable.createdAt,
             updatedAt: formsTable.updatedAt,
             field: {
@@ -82,12 +83,12 @@ class FormService {
             return null
         }
 
-        const { id, title, description, visibility, createdAt, updatedAt } = rows[0]!
+        const { id, title, description, visibility, createdBy, createdAt, updatedAt } = rows[0]!
         const fields = rows
             .filter(r => r.field?.id !== null)
             .map(r => r.field as NonNullable<typeof r.field>)
 
-        return { id, title, description, visibility, createdAt, updatedAt, fields }
+        return { id, title, description, visibility, createdBy, createdAt, updatedAt, fields }
     }
 
     public async updateFormVisibility(payload: UpdateFormVisibilityInputType) {

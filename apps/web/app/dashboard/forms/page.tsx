@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useForm, type SubmitHandler } from "react-hook-form"
 import { useCreateForm, useListForms } from "~/hooks/api/form"
@@ -53,12 +53,36 @@ export default function FormsPage() {
         },
     })
 
+    // Hydrate draft
+    useEffect(() => {
+        const draft = sessionStorage.getItem("draft_new_form")
+        if (draft) {
+            try {
+                const parsed = JSON.parse(draft)
+                if (parsed.title) form.setValue("title", parsed.title)
+                if (parsed.description) form.setValue("description", parsed.description)
+                if (parsed.visibility) form.setValue("visibility", parsed.visibility)
+            } catch (e) {
+                console.error("Failed to parse form draft", e)
+            }
+        }
+    }, [form.setValue])
+
+    // Auto-save draft
+    useEffect(() => {
+        const subscription = form.watch((value) => {
+            sessionStorage.setItem("draft_new_form", JSON.stringify(value))
+        })
+        return () => subscription.unsubscribe()
+    }, [form.watch])
+
     const onSubmit: SubmitHandler<CreateFormValues> = async (data) => {
         await createFormAsync({
             title: data.title,
             description: data.description || undefined,
             visibility: data.visibility,
         })
+        sessionStorage.removeItem("draft_new_form")
         form.reset()
         setOpen(false)
     }
