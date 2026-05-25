@@ -3,6 +3,7 @@ import { z } from 'zod'
 export const createFormInputModel = z.object({
     title: z.string().max(55).describe("Title of the form"),
     description: z.string().max(300).optional().describe("Description of the form"),
+    visibility: z.enum(['PUBLIC', 'UNLISTED', 'UNPUBLISHED']).optional().default('UNPUBLISHED').describe("Visibility of the form"),
 })
 
 
@@ -15,6 +16,7 @@ export const listFormsOutputModel = z.array(
         id: z.string().uuid().describe('UUID of the form'),
         title: z.string().max(55).describe('Title of the form'),
         description: z.string().max(300).nullable().optional().describe('Description of the form'),
+        visibility: z.enum(['PUBLIC', 'UNLISTED', 'UNPUBLISHED']).describe('Visibility of the form'),
         createdAt: z.date().nullable().describe('Creation date of the form'),
         updatedAt: z.date().nullable().describe('Updation date of the form'),
     })
@@ -87,10 +89,30 @@ export const getFormOutputModel = z.object({
     id: z.string(),
     title: z.string(),
     description: z.string().nullable().optional(),
+    visibility: z.enum(['PUBLIC', 'UNLISTED', 'UNPUBLISHED']),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable(),
     fields: z.array(formFieldObject),
 }).nullable()
+
+export const getFormForEditorOutputModel = z.object({
+    id: z.string(),
+    title: z.string(),
+    description: z.string().nullable().optional(),
+    visibility: z.enum(['PUBLIC', 'UNLISTED', 'UNPUBLISHED']),
+    createdAt: z.date().nullable(),
+    updatedAt: z.date().nullable(),
+    fields: z.array(formFieldObject),
+}).nullable()
+
+export const updateFormVisibilityInputModel = z.object({
+    formId: z.string().uuid().describe('UUID of the form'),
+    visibility: z.enum(['PUBLIC', 'UNLISTED', 'UNPUBLISHED']).describe('New visibility of the form'),
+})
+
+export const updateFormVisibilityOutputModel = z.object({
+    success: z.boolean(),
+})
 
 export const submitFormInputModel = z.object({
     formId: z.string().uuid().describe('UUID of the form being submitted'),
@@ -120,3 +142,20 @@ export const getFormSubmissionsOutputModel = z.array(
         createdAt: z.date().nullable(),
     })
 )
+
+export const getFormAnalyticsInputModel = z.object({
+    formId: z.string().uuid().describe('UUID of the form'),
+})
+
+export const getFormAnalyticsOutputModel = z.object({
+    totalSubmissions: z.number().describe('Total number of submissions'),
+    breakdown: z.array(z.object({
+        fieldId: z.string().describe('UUID of the field'),
+        value: z.string().describe('Response value'),
+        count: z.number().describe('Number of occurrences'),
+    })).describe('Response counts grouped by field and value'),
+    timeline: z.array(z.object({
+        date: z.string().describe('Submission date (YYYY-MM-DD)'),
+        count: z.number().describe('Number of submissions on that date'),
+    })).describe('Submission counts grouped by date'),
+})

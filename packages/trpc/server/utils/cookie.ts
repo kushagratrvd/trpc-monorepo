@@ -40,16 +40,38 @@ export function clearCookieFactory(res: Response){
 
 // Authentication Cookie
 
-const AUTHENTICATION_COOKIE_NAME = 'authentication-token'
+const AUTHENTICATION_COOKIE_NAME = 'access-token'
+const REFRESH_TOKEN_COOKIE_NAME = 'refresh-token'
 
-export function setAuthenticationCookie(ctx: TRPCContext, accessToken: string){
-    ctx.createCookie(AUTHENTICATION_COOKIE_NAME, accessToken);
+export function setAuthenticationCookies(ctx: TRPCContext, accessToken: string, refreshToken: string){
+    const secure = process.env.NODE_ENV === "production";
+    
+    ctx.createCookie(AUTHENTICATION_COOKIE_NAME, accessToken, {
+        path: "/",
+        httpOnly: true,
+        secure,
+        sameSite: "lax",
+        maxAge: 15 * ONE_MINUTE,
+    });
+
+    ctx.createCookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, {
+        path: "/",
+        httpOnly: true,
+        secure,
+        sameSite: "lax",
+        maxAge: 7 * ONE_DAY,
+    });
 }
 
 export function getAuthenticationCookie(ctx: TRPCContext){
     return ctx.getCookie(AUTHENTICATION_COOKIE_NAME);
 }
 
-export function clearAuthenticationCookie(ctx: TRPCContext){
+export function getRefreshTokenCookie(ctx: TRPCContext){
+    return ctx.getCookie(REFRESH_TOKEN_COOKIE_NAME);
+}
+
+export function clearAuthenticationCookies(ctx: TRPCContext){
     ctx.clearCookie(AUTHENTICATION_COOKIE_NAME);
+    ctx.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
 }

@@ -1,20 +1,22 @@
 import { asc, db } from '@repo/database'
 import { formFieldsTable, formsTable } from '@repo/database/schema'
-import { createFormInput, listFormsByUserIdInput, ListFormsByUserIdInputType, type CreateFormInputType, getFormByIdInput, type GetFormByIdInputType } from './model'
+import { createFormInput, listFormsByUserIdInput, ListFormsByUserIdInputType, type CreateFormInputType, getFormByIdInput, type GetFormByIdInputType, updateFormVisibilityInput, type UpdateFormVisibilityInputType } from './model'
 import { eq } from '@repo/database'
+import { ApiError } from "../errors"
 
 class FormService {
     public async createForm(payload: CreateFormInputType) {
-        const { title, description, createdBy } = await createFormInput.parseAsync(payload)
+        const { title, description, createdBy, visibility } = await createFormInput.parseAsync(payload)
 
         const result = await db.insert(formsTable).values({
             title,
             description,
-            createdBy
+            createdBy,
+            visibility,
         }).returning({ id: formsTable.id, })
 
         if(!result || result.length === 0 || !result[0]?.id) {
-            throw new Error('Failed to create form')
+            throw ApiError.internal("Failed to create form", "FORM_CREATION_FAILED")
         }
         
         return { id: result[0].id }
@@ -27,6 +29,7 @@ class FormService {
             id: formsTable.id,
             title: formsTable.title,
             description: formsTable.description,
+            visibility: formsTable.visibility,
             createdAt: formsTable.createdAt,
             updatedAt: formsTable.updatedAt,
         }).from(formsTable).where(eq(formsTable.createdBy, userId))
@@ -41,6 +44,7 @@ class FormService {
             id: formsTable.id,
             title: formsTable.title,
             description: formsTable.description,
+            visibility: formsTable.visibility,
             createdAt: formsTable.createdAt,
             updatedAt: formsTable.updatedAt,
             field: {
@@ -62,12 +66,22 @@ class FormService {
             return null
         }
 
-        const { id, title, description, createdAt, updatedAt } = rows[0]!
+        const { id, title, description, visibility, createdAt, updatedAt } = rows[0]!
         const fields = rows
             .filter(r => r.field?.id !== null)
             .map(r => r.field as NonNullable<typeof r.field>)
 
-        return { id, title, description, createdAt, updatedAt, fields }
+        return { id, title, description, visibility, createdAt, updatedAt, fields }
+    }
+
+    public async updateFormVisibility(payload: UpdateFormVisibilityInputType) {
+        const { formId, visibility } = await updateFormVisibilityInput.parseAsync(payload)
+        
+        await db.update(formsTable)
+            .set({ visibility })
+            .where(eq(formsTable.id, formId))
+            
+        return { success: true }
     }
 }
 

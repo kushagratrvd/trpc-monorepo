@@ -8,6 +8,8 @@ import {
     useCreateField,
     useUpdateField,
     useDeleteField,
+    useGetFormForEditor,
+    useUpdateFormVisibility,
 } from "~/hooks/api/form"
 import { Button } from "~/components/ui/button"
 import {
@@ -36,6 +38,7 @@ import {
     PencilIcon,
     Trash2Icon,
     InboxIcon,
+    BarChart3Icon,
 } from "lucide-react"
 
 const FIELD_TYPES = ["TEXT", "NUMBER", "EMAIL", "YES_NO", "PASSWORD"] as const
@@ -68,10 +71,14 @@ type EditFieldValues = {
 export default function FormBuilderPage({ params }: { params: Promise<{ id: string }>; }) {
     const { id: formId } = use(params);
 
-    const { fields, isLoading } = useGetFields(formId)
+    const { form: formData, isLoading: isFormLoading } = useGetFormForEditor(formId)
+    const { fields, isLoading: isFieldsLoading } = useGetFields(formId)
     const { createFieldAsync, status: createStatus } = useCreateField(formId)
     const { updateFieldAsync, status: updateStatus } = useUpdateField(formId)
     const { deleteFieldAsync } = useDeleteField(formId)
+    const { updateFormVisibilityAsync, status: visibilityUpdateStatus } = useUpdateFormVisibility(formId)
+
+    const isLoading = isFormLoading || isFieldsLoading
 
     const [createOpen, setCreateOpen] = useState(false)
     const createForm = useForm<CreateFieldValues>({
@@ -165,10 +172,30 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
                         : "Loading..."}
                 </p>
                 <div className="flex items-center gap-2">
+                    <Select 
+                        value={formData?.visibility} 
+                        onValueChange={(val: any) => updateFormVisibilityAsync({ formId, visibility: val })}
+                        disabled={visibilityUpdateStatus === 'pending' || isFormLoading}
+                    >
+                        <SelectTrigger className="w-[140px] h-9">
+                            <SelectValue placeholder="Visibility" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="UNPUBLISHED">Draft</SelectItem>
+                            <SelectItem value="PUBLIC">Public</SelectItem>
+                            <SelectItem value="UNLISTED">Unlisted</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Button asChild size="sm" variant="outline" className="border-neutral-800 text-neutral-350 hover:bg-neutral-800 bg-neutral-900/40">
+                        <Link href={`/dashboard/forms/${formId}/analytics`}>
+                            <BarChart3Icon className="size-4 mr-1.5 text-indigo-400" />
+                            Analytics
+                        </Link>
+                    </Button>
                     <Button asChild size="sm" variant="outline" className="border-neutral-800 text-neutral-350 hover:bg-neutral-800">
                         <Link href={`/dashboard/forms/${formId}/submissions`}>
                             <InboxIcon className="size-4 mr-1.5" />
-                            View Submissions
+                            Submissions
                         </Link>
                     </Button>
                     <Button size="sm" onClick={() => setCreateOpen(true)}>

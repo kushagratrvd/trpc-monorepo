@@ -16,6 +16,14 @@ import { Field, FieldGroup, FieldLabel } from "~/components/ui/field"
 import { Input } from "~/components/ui/input"
 import { Textarea } from "~/components/ui/textarea"
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "~/components/ui/select"
+import { Badge } from "~/components/ui/badge"
+import {
     Table,
     TableBody,
     TableCell,
@@ -28,6 +36,7 @@ import { Skeleton } from "~/components/ui/skeleton"
 type CreateFormValues = {
     title: string;
     description: string;
+    visibility: "PUBLIC" | "UNLISTED" | "UNPUBLISHED";
 }
 
 export default function FormsPage() {
@@ -40,6 +49,7 @@ export default function FormsPage() {
         defaultValues: {
             title: "",
             description: "",
+            visibility: "UNPUBLISHED",
         },
     })
 
@@ -47,6 +57,7 @@ export default function FormsPage() {
         await createFormAsync({
             title: data.title,
             description: data.description || undefined,
+            visibility: data.visibility,
         })
         form.reset()
         setOpen(false)
@@ -67,6 +78,7 @@ export default function FormsPage() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>Title</TableHead>
+                            <TableHead>Visibility</TableHead>
                             <TableHead>Description</TableHead>
                             <TableHead>Created At</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
@@ -77,6 +89,7 @@ export default function FormsPage() {
                             Array.from({ length: 3 }).map((_, i) => (
                                 <TableRow key={i}>
                                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
                                     <TableCell><Skeleton className="h-4 w-48" /></TableCell>
                                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                                     <TableCell className="text-right"><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
@@ -86,6 +99,11 @@ export default function FormsPage() {
                             forms.map((f) => (
                                 <TableRow key={f.id}>
                                     <TableCell className="font-medium">{f.title}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={f.visibility === 'PUBLIC' ? 'default' : f.visibility === 'UNLISTED' ? 'secondary' : 'outline'}>
+                                            {f.visibility === 'PUBLIC' ? 'Public' : f.visibility === 'UNLISTED' ? 'Unlisted' : 'Draft'}
+                                        </Badge>
+                                    </TableCell>
                                     <TableCell className="text-muted-foreground max-w-xs truncate">
                                         {f.description || "—"}
                                     </TableCell>
@@ -161,6 +179,23 @@ export default function FormsPage() {
                                         {form.formState.errors.description.message}
                                     </p>
                                 )}
+                            </Field>
+
+                            <Field>
+                                <FieldLabel>Visibility</FieldLabel>
+                                <Select
+                                    value={form.watch("visibility")}
+                                    onValueChange={(val: any) => form.setValue("visibility", val)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select visibility" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="UNPUBLISHED">Draft (Unpublished)</SelectItem>
+                                        <SelectItem value="PUBLIC">Public</SelectItem>
+                                        <SelectItem value="UNLISTED">Unlisted</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </Field>
                         </FieldGroup>
 

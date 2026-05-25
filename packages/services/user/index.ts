@@ -1,10 +1,17 @@
-import { randomBytes, createHmac } from "node:crypto"
-import { db, eq } from "@repo/database";
-import { usersTable } from "@repo/database/schema";
+import * as bcrypt from "bcrypt";
+import * as crypto from "crypto";
+import { db, eq, and, or, gt, lt, isNull, isNotNull, sql } from "@repo/database";
+import { usersTable, sessionsTable } from "@repo/database/schema";
 import { env } from "../env";
 import * as JWT from "jsonwebtoken";
 import { googleOAuth2Client } from "../clients/google-oauth";
-import { type CreateUserWithEmailAndPasswordInputType, createUserWithEmailAndPasswordInput, generateUserTokenPayload, type GenerateUserTokenPayloadType, signInUserWithEmailAndPasswordInput, type signInUserWithEmailAndPasswordInputType, GetAuthenticationMethodOutputSchema} from "./model";
+import { type CreateUserWithEmailAndPasswordInputType, createUserWithEmailAndPasswordInput, signInUserWithEmailAndPasswordInput, type signInUserWithEmailAndPasswordInputType, GetAuthenticationMethodOutputSchema} from "./model";
+import { ApiError } from "../errors";
+
+interface AccessTokenPayload {
+  id: string;
+  type: "access";
+}
 
 class UserService {
 
@@ -14,19 +21,107 @@ class UserService {
     return result[0];
   }
 
-  private async generateUserToken(payload: GenerateUserTokenPayloadType){
-    const { id } = await generateUserTokenPayload.parseAsync(payload)
-    const token = JWT.sign({ id }, env.JWT_SECRET)
-    return { token };
+  public async generateUserTokens(userId: string) {
+    const user = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.id, userId)).then(res => res[0]);
+    if (!user) throw ApiError.unauthorized("User not found", "USER_NOT_FOUND");
+
+    const accessToken = JWT.sign(
+      { id: userId, type: "access" },
+      env.JWT_SECRET,
+      { expiresIn: "15m" } // 15 minutes
+    );
+
+    const refreshToken = crypto.randomBytes(32).toString('hex');
+    const refreshTokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    await db.insert(sessionsTable).values({
+      userId,
+      refreshTokenHash,
+      expiresAt
+    });
+
+    return { accessToken, refreshToken };
   }
 
-  private async verifyUserToken(token: string): Promise<GenerateUserTokenPayloadType>{
+  public async verifyUserToken(token: string): Promise<AccessTokenPayload> {
     try {
-      const verificationResult = JWT.verify(token, env.JWT_SECRET) as GenerateUserTokenPayloadType
+      const verificationResult = JWT.verify(token, env.JWT_SECRET, {
+        algorithms: ["HS256"],
+      }) as AccessTokenPayload;
+
+      if (verificationResult.type !== "access") {
+        throw new Error("Invalid token type");
+      }
+
       return verificationResult;
     } catch (error) {
-      throw new Error("Invalid token");
+      throw ApiError.unauthorized("Invalid token", "INVALID_TOKEN");
     }
+  }
+
+  public async refreshUserSession(payload: { refreshToken: string }) {
+    const refreshTokenHash = crypto.createHash('sha256').update(payload.refreshToken).digest('hex');
+
+    const session = await db.select()
+      .from(sessionsTable)
+      .where(and(
+        eq(sessionsTable.refreshTokenHash, refreshTokenHash),
+        isNull(sessionsTable.revokedAt),
+        gt(sessionsTable.expiresAt, new Date())
+      ))
+      .then(res => res[0]);
+
+    if (!session) {
+      throw ApiError.unauthorized("Invalid refresh token", "INVALID_REFRESH_TOKEN");
+    }
+
+    // Revoke old session
+    await db.update(sessionsTable)
+      .set({ revokedAt: new Date(), updatedAt: new Date() })
+      .where(eq(sessionsTable.id, session.id));
+
+    // Delete expired or revoked sessions for this user to keep table size clean
+    await db.delete(sessionsTable)
+      .where(and(
+        eq(sessionsTable.userId, session.userId),
+        or(
+          isNotNull(sessionsTable.revokedAt),
+          lt(sessionsTable.expiresAt, new Date())
+        )
+      ));
+
+    return this.generateUserTokens(session.userId);
+  }
+
+  public async invalidateUserSessions(userId: string) {
+    // Increment the user's tokenVersion to instantly invalidate all access tokens
+    await db.update(usersTable)
+      .set({ tokenVersion: sql`${usersTable.tokenVersion} + 1` })
+      .where(eq(usersTable.id, userId));
+      
+    // Revoke all sessions
+    await db.update(sessionsTable)
+      .set({ revokedAt: new Date(), updatedAt: new Date() })
+      .where(eq(sessionsTable.userId, userId));
+  }
+
+  public async invalidateSessionByRefreshToken(refreshToken: string) {
+    const refreshTokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+
+    const session = await db.select({ userId: sessionsTable.userId })
+      .from(sessionsTable)
+      .where(and(
+        eq(sessionsTable.refreshTokenHash, refreshTokenHash),
+        isNull(sessionsTable.revokedAt)
+      ))
+      .then(res => res[0]);
+
+    if (!session) {
+      throw ApiError.unauthorized("Invalid refresh token", "INVALID_REFRESH_TOKEN");
+    }
+
+    await this.invalidateUserSessions(session.userId);
   }
 
   public async getUserInfoById(id: string){
@@ -37,56 +132,56 @@ class UserService {
       profileImageUrl: usersTable.profileImageUrl,
     }).from(usersTable).where(eq(usersTable.id, id))
 
-    if(!user || user.length === 0) throw new Error(`User with id ${id} does not exist`);
+    if(!user || user.length === 0) throw ApiError.notFound(`User with id ${id} does not exist`, "USER_NOT_FOUND");
     return user[0]!;
   }
 
-  private async generateHash(salt: string, password: string){
-    return createHmac('sha256', salt).update(password).digest('hex')
-  }
 
   public async createUserWithEmailAndPassword(payload: CreateUserWithEmailAndPasswordInputType){
     const { fullName, email, password } = await createUserWithEmailAndPasswordInput.parseAsync(payload)
 
-    // Check if user is already existing or not
     const existingUserWithEmail = await this.getUserByEmail(email);
-    if (existingUserWithEmail) throw new Error(`User with email ${email} already exists`)
+    if (existingUserWithEmail) {
+      throw ApiError.conflict("An account with this email address already exists", "EMAIL_ALREADY_EXISTS");
+    }
 
-    const salt = randomBytes(16).toString('hex');
-    const hash = await this.generateHash(salt, password);
+    const hash = await bcrypt.hash(password, 12);
 
-    const userInsertResult = await db.insert(usersTable).values({ email, fullName, password: hash, salt }).returning({ 
+    const userInsertResult = await db.insert(usersTable).values({ email, fullName, password: hash, salt: null }).returning({ 
       id: usersTable.id
     })
 
-    if (!userInsertResult || userInsertResult.length === 0 || !userInsertResult[0]?.id) throw new Error(`something went wrong`);
+    if (!userInsertResult || userInsertResult.length === 0 || !userInsertResult[0]?.id) {
+      throw ApiError.internal("Failed to register account due to an internal system error", "REGISTRATION_FAILED");
+    }
 
     const userId = userInsertResult[0].id
-    const { token } = await this.generateUserToken({ id: userId })
+    const tokens = await this.generateUserTokens(userId)
 
     return {
       id: userId, 
-      token
+      ...tokens
     }
   }
 
   public async signInUserWithEmailAndPassword(payload: signInUserWithEmailAndPasswordInputType){
     const { email, password } = await signInUserWithEmailAndPasswordInput.parseAsync(payload)
 
-    // Check if user is already existing or not
     const existingUser = await this.getUserByEmail(email);
-    if (!existingUser) throw new Error(`User with email ${email} does not exist`)
+    if (!existingUser || !existingUser.password) {
+      throw ApiError.unauthorized("Invalid email or password", "INVALID_CREDENTIALS");
+    }
 
-    if(!existingUser.password || !existingUser.salt) throw new Error("Email or Password doesn't match");
+    const isMatch = await bcrypt.compare(password, existingUser.password);
+    if(!isMatch) {
+      throw ApiError.unauthorized("Invalid email or password", "INVALID_CREDENTIALS");
+    }
 
-    const hash = await this.generateHash(existingUser.salt, password);
-    if(hash !== existingUser.password) throw new Error("Invalid email or password");
-
-    const { token } = await this.generateUserToken({ id: existingUser.id })
+    const tokens = await this.generateUserTokens(existingUser.id)
 
     return {
       id: existingUser.id, 
-      token
+      ...tokens
     }
   }
 

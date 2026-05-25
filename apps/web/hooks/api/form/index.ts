@@ -162,12 +162,40 @@ export const useGetForm = (formId: string) => {
     }
 }
 
+export const useGetFormForEditor = (formId: string) => {
+    const { data: form, error, isFetched, isFetching, isLoading, status } =
+        trpc.form.getFormForEditor.useQuery({ formId })
+
+    return {
+        form,
+        error,
+        isFetched,
+        isFetching, 
+        isLoading, 
+        status
+    }
+}
+
 export const useGetFormSubmissions = (formId: string) => {
     const { data: submissions, error, isFetched, isFetching, isLoading, status } = 
         trpc.form.getFormSubmissions.useQuery({ formId })
 
     return {
         submissions,
+        error,
+        isFetched,
+        isFetching,
+        isLoading,
+        status
+    }
+}
+
+export const useGetFormAnalytics = (formId: string) => {
+    const { data: analytics, error, isFetched, isFetching, isLoading, status } = 
+        trpc.form.getFormAnalytics.useQuery({ formId })
+
+    return {
+        analytics,
         error,
         isFetched,
         isFetching,
@@ -197,6 +225,37 @@ export const useSubmitForm = (formId: string) => {
     return {
         submitFormAsync,
         submitForm,
+        error,
+        failureCount,
+        isError,
+        isIdle,
+        isSuccess,
+        status
+    }
+}
+
+export const useUpdateFormVisibility = (formId: string) => {
+    const utils = trpc.useUtils()
+
+    const {
+        mutateAsync: updateFormVisibilityAsync,
+        mutate: updateFormVisibility,
+        error,
+        failureCount,
+        isError,
+        isIdle,
+        isSuccess,
+        status
+    } = trpc.form.updateFormVisibility.useMutation({
+        onSuccess: async () => {
+            await utils.form.listForms.invalidate()
+            await utils.form.getForm.invalidate({ formId })
+        }
+    })
+
+    return {
+        updateFormVisibilityAsync,
+        updateFormVisibility,
         error,
         failureCount,
         isError,

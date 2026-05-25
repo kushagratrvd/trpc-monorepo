@@ -5,8 +5,13 @@ import {
   timestamp,
   boolean,
   text,
+  pgEnum,
 } from "drizzle-orm/pg-core";
 import { usersTable } from "./user";
+
+export const formVisibilityEnum = pgEnum('form_visibility', [
+  'PUBLIC', 'UNLISTED', 'UNPUBLISHED'
+]);
 
 export const formsTable = pgTable("forms", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -18,5 +23,6 @@ export const formsTable = pgTable("forms", {
 
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").$onUpdate(() => new Date()),
+  visibility: formVisibilityEnum("visibility").default("UNPUBLISHED").notNull(),
 });
 

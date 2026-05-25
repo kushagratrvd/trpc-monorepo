@@ -13,10 +13,15 @@ import {
     updateFieldOutputModel,
     getFormInputModel,
     getFormOutputModel,
+    getFormForEditorOutputModel,
     submitFormInputModel,
     submitFormOutputModel,
     getFormSubmissionsOutputModel,
     getFormSubmissionsInputModel,
+    updateFormVisibilityInputModel,
+    updateFormVisibilityOutputModel,
+    getFormAnalyticsInputModel,
+    getFormAnalyticsOutputModel,
 } from "./model";
 import { generatePath } from "../../utils/path-generator";
 import { formService, formFieldService, formSubmissionService } from "../../services";
@@ -31,11 +36,12 @@ export const formRouter = router({
         .input(createFormInputModel)
         .output(createFormOutputModel)
         .mutation(async ({ input, ctx }) => {
-            const { title, description } = input;
+            const { title, description, visibility } = input;
             
             const { id } = await formService.createForm({
                 title,
                 description,
+                visibility,
                 createdBy: ctx.user.id,
             });
 
@@ -123,7 +129,42 @@ export const formRouter = router({
         .output(getFormOutputModel)
         .query(async ({ input }) => {
             const { formId } = input
+            const form = await formService.getFormById({ formId })
+            
+            if (form?.visibility === 'UNPUBLISHED') {
+                return null;
+            }
+            
+            return form;
+        }),
+
+    getFormForEditor: authenticatedProcedure.meta({
+        openapi: {
+            method: 'GET',
+            path: getPath('/getFormForEditor'),
+            tags: TAGS,
+            protect: true,
+        }
+    })
+        .input(getFormInputModel)
+        .output(getFormForEditorOutputModel)
+        .query(async ({ input }) => {
+            const { formId } = input
             return formService.getFormById({ formId })
+        }),
+
+    updateFormVisibility: authenticatedProcedure.meta({
+        openapi: {
+            method: 'POST',
+            path: getPath('/updateFormVisibility'),
+            tags: TAGS,
+            protect: true,
+        }
+    })
+        .input(updateFormVisibilityInputModel)
+        .output(updateFormVisibilityOutputModel)
+        .mutation(async ({ input }) => {
+            return formService.updateFormVisibility(input)
         }),
 
     submitForm: publicProcedure.meta({
@@ -152,5 +193,30 @@ export const formRouter = router({
         .query(async ({ input }) => {
             const { formId } = input
             return formSubmissionService.getFormSubmissions({ formId })
+        }),
+
+    getFormAnalytics: authenticatedProcedure.meta({
+        openapi: {
+            method: 'GET',
+            path: getPath('/getFormAnalytics'),
+            tags: TAGS,
+            protect: true,
+        }
+    })
+        .input(getFormAnalyticsInputModel)
+        .output(getFormAnalyticsOutputModel)
+        .query(async ({ input, ctx }) => {
+            const { formId } = input
+            
+            // Ownership check
+            const form = await formService.getFormById({ formId })
+            if (!form) {
+                throw new Error("Form not found")
+            }
+            if (form.createdBy !== ctx.user.id) {
+                throw new Error("Unauthorized access to form analytics")
+            }
+            
+            return formSubmissionService.getFormAnalytics({ formId })
         }),
 });

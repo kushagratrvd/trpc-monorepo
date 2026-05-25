@@ -34,6 +34,16 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
 
   const onSubmit = async (data: Record<string, any>) => {
     if (!form) return
+
+    // Honeypot spam protection: if the hidden field was filled, a bot submitted this.
+    // Show fake success without actually saving anything.
+    if (data.__hp_website) {
+      await new Promise((r) => setTimeout(r, 800))
+      setSubmittedData(data)
+      setSubmitted(true)
+      return
+    }
+
     setSubmitError(null)
     try {
       const submissionValues = form.fields.map((field) => {
@@ -212,6 +222,22 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
         </CardHeader>
 
         <form onSubmit={handleSubmit(onSubmit)}>
+          {/* Honeypot field — invisible to humans, bots auto-fill it */}
+          <div
+            aria-hidden="true"
+            className="absolute opacity-0 pointer-events-none -z-10 overflow-hidden h-0 w-0"
+            style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}
+          >
+            <label htmlFor="__hp_website">Website</label>
+            <input
+              id="__hp_website"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              {...register("__hp_website")}
+            />
+          </div>
+
           <CardContent className="pt-6 space-y-6">
             {form.fields.length > 0 ? (
               form.fields.map((field) => {

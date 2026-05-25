@@ -5,6 +5,7 @@ import {
   timestamp,
   boolean,
   text,
+  integer,
 } from "drizzle-orm/pg-core";
 
 export const usersTable = pgTable("users", {
@@ -19,6 +20,8 @@ export const usersTable = pgTable("users", {
 
   salt: text('salt'),
   password: text('password'),
+
+  tokenVersion: integer("token_version").default(0).notNull(),
 
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").$onUpdate(() => new Date()),

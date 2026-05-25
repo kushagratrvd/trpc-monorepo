@@ -6,6 +6,7 @@ import {
     getFieldsInput, type getFieldsInputType,
     deleteFormFieldInput, type deleteFormFieldInputType,
 } from './model'
+import { ApiError } from "../errors"
 
 function toLabelKey(label: string): string {
     return label
@@ -48,7 +49,7 @@ class FormFieldService {
         }).returning({ id: formFieldsTable.id })
 
         if (!result || result.length === 0 || !result[0]?.id) {
-            throw new Error('Failed to create form field')
+            throw ApiError.internal('Failed to create form field', 'FIELD_CREATION_FAILED')
         }
 
         return { id: result[0].id, labelKey, index }
@@ -66,7 +67,7 @@ class FormFieldService {
         if (updates.isRequired !== undefined) patch.isRequired = updates.isRequired
 
         if (Object.keys(patch).length === 0) {
-            throw new Error('No fields to update')
+            throw ApiError.badRequest('No fields to update', 'NO_FIELDS_TO_UPDATE')
         }
 
         const result = await db
@@ -76,7 +77,7 @@ class FormFieldService {
             .returning({ id: formFieldsTable.id })
 
         if (!result || result.length === 0 || !result[0]?.id) {
-            throw new Error(`Field with ID ${fieldId} not found or update failed.`)
+            throw ApiError.notFound(`Field with ID ${fieldId} not found or update failed.`, 'FIELD_NOT_FOUND')
         }
 
         return { id: result[0].id }
@@ -114,7 +115,7 @@ class FormFieldService {
             .returning({ id: formFieldsTable.id })
 
         if (!result || result.length === 0 || !result[0]?.id) {
-            throw new Error(`Field with ID ${fieldId} not found or delete failed.`)
+            throw ApiError.notFound(`Field with ID ${fieldId} not found or delete failed.`, 'FIELD_NOT_FOUND')
         }
 
         return { id: result[0].id }

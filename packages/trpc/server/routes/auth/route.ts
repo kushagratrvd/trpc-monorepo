@@ -4,7 +4,8 @@ import { getAuthenticationMethodOutputSchema } from "@repo/services/user/model";
 import { authenticatedProcedure, publicProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 import { createUserWithEmailAndPasswordInputModel, createUserWithEmailAndPasswordOutputModel, getLoggedInUserInfoInputModel, getLoggedInUserInfoOutputModel, signInUserWithEmailAndPasswordInputModel, signInUserWithEmailAndPasswordOutputModel } from "./model";
-import { getAuthenticationCookie, setAuthenticationCookie } from "../../utils/cookie";
+import { getAuthenticationCookie, getRefreshTokenCookie, setAuthenticationCookies, clearAuthenticationCookies } from "../../utils/cookie";
+import { ApiError } from "@repo/services/errors";
 
 const TAGS = ["Authentication"];
 const getPath = generatePath("/authentication");
@@ -22,11 +23,11 @@ export const authRouter = router({
     .mutation(async ({ input, ctx }) => {
       const { fullName, email, password } = input
       
-      const { id, token } = await userService.createUserWithEmailAndPassword({
+      const { id, accessToken, refreshToken } = await userService.createUserWithEmailAndPassword({
         fullName, email, password
       })
 
-      setAuthenticationCookie(ctx, token);
+      setAuthenticationCookies(ctx, accessToken, refreshToken);
 
       return {
         id
@@ -43,15 +44,70 @@ export const authRouter = router({
     .output(signInUserWithEmailAndPasswordOutputModel)
     .mutation(async({ input, ctx }) => {
     const { email, password } = input;
-      const { id, token } = await userService.signInUserWithEmailAndPassword({
+      const { id, accessToken, refreshToken } = await userService.signInUserWithEmailAndPassword({
         email, password
       })
 
-      setAuthenticationCookie(ctx, token);
+      setAuthenticationCookies(ctx, accessToken, refreshToken);
 
       return {
         id
       }
+    }),
+
+  signOut: publicProcedure
+    .meta({openapi: {
+      method: 'POST',
+      path: getPath('/signOut'),
+      tags: TAGS
+    }})
+    .input(zodUndefinedModel)
+    .output(z.object({ success: z.boolean() }))
+    .mutation(async ({ ctx }) => {
+      const accessToken = getAuthenticationCookie(ctx);
+      const refreshTokenValue = getRefreshTokenCookie(ctx);
+
+      if (accessToken) {
+        try {
+          const payload = await userService.verifyAndDecodeUserToken(accessToken);
+          await userService.invalidateUserSessions(payload.id);
+        } catch {
+          // Access token expired — try to find userId via refresh token
+          if (refreshTokenValue) {
+            try {
+              await userService.invalidateSessionByRefreshToken(refreshTokenValue);
+            } catch { /* ignore — still clear cookies below */ }
+          }
+        }
+      } else if (refreshTokenValue) {
+        // No access token at all, but refresh token exists
+        try {
+          await userService.invalidateSessionByRefreshToken(refreshTokenValue);
+        } catch { /* ignore */ }
+      }
+
+      clearAuthenticationCookies(ctx);
+      return { success: true };
+    }),
+
+  refreshToken: publicProcedure
+    .meta({openapi: {
+      method: 'POST',
+      path: getPath('/refreshToken'),
+      tags: TAGS
+    }})
+    .input(z.object({ refreshToken: z.string().optional() }))
+    .output(z.object({ success: z.boolean() }))
+    .mutation(async ({ input, ctx }) => {
+      const token = input.refreshToken || ctx.getCookie('refresh-token');
+      if (!token) {
+        throw ApiError.unauthorized("No refresh token provided", "MISSING_REFRESH_TOKEN");
+      }
+      
+      const { accessToken, refreshToken } = await userService.refreshUserSession({ refreshToken: token });
+      setAuthenticationCookies(ctx, accessToken, refreshToken);
+      
+      return { success: true };
     }),
 
   getLoggedInUserInfo: authenticatedProcedure
