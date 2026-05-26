@@ -81,16 +81,16 @@ export default function SubmissionsPage({ params }: SubmissionsPageProps) {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Back navigation & Export action header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-[#18181b] border-2 border-[#365314] p-4 rounded-sm shadow-md">
         <div className="flex items-center gap-4">
-          <Button asChild size="sm" variant="ghost" className="hover:bg-neutral-800 text-neutral-400 hover:text-foreground">
+          <Button asChild size="sm" variant="ghost" className="hover:bg-slate-800 text-slate-400 hover:text-white transition-all font-mono text-xs uppercase tracking-wider">
             <Link href={`/dashboard/forms/${formId}`}>
               <ArrowLeftIcon className="size-4 mr-1.5" />
               Back to Builder
             </Link>
           </Button>
-          <div className="h-4 w-px bg-neutral-800 hidden sm:block" />
-          <p className="text-xs text-muted-foreground hidden sm:block">
+          <div className="h-4 w-px bg-slate-800 hidden sm:block" />
+          <p className="text-xs text-slate-400 font-mono hidden sm:block">
             Form Submissions Insights
           </p>
         </div>
@@ -99,29 +99,29 @@ export default function SubmissionsPage({ params }: SubmissionsPageProps) {
           <Button
             size="sm"
             onClick={exportToCSV}
-            className="bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800 hover:text-foreground shadow-sm transition-all flex items-center gap-1.5 font-medium ml-auto sm:ml-0"
+            className="font-mono text-xs uppercase tracking-wider"
           >
-            <DownloadIcon className="size-3.5" />
+            <DownloadIcon className="size-3.5 mr-1" />
             Export to CSV
           </Button>
         )}
       </div>
 
       {/* Main card header */}
-      <div className="space-y-1">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            {formLoading ? <Skeleton className="h-8 w-64 bg-neutral-800" /> : `Submissions for ${form?.title}`}
+      <div className="space-y-2 bg-slate-900/50 border border-slate-800/80 p-5 rounded-sm">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-black font-pixel tracking-wide text-white">
+            {formLoading ? <Skeleton className="h-8 w-64" /> : `Submissions for ${form?.title}`}
           </h1>
           {!isLoading && hasSubmissions && (
-            <Badge variant="secondary" className="px-2 py-0.5 text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+            <Badge variant="secondary" className="px-2.5 py-0.5 text-xs font-bold font-mono uppercase bg-[#84cc16]/10 text-[#84cc16] border border-[#365314]/30 rounded-sm">
               {submissions.length} Total
             </Badge>
           )}
         </div>
-        <p className="text-sm text-muted-foreground max-w-3xl leading-relaxed">
+        <p className="text-sm text-slate-400 max-w-3xl leading-relaxed">
           {formLoading ? (
-            <Skeleton className="h-4 w-96 bg-neutral-800" />
+            <Skeleton className="h-4 w-96" />
           ) : (
             form?.description || "View, search, and analyze all captured public submissions of this form."
           )}
@@ -129,48 +129,48 @@ export default function SubmissionsPage({ params }: SubmissionsPageProps) {
       </div>
 
       {/* Dynamic submissions display card */}
-      <Card className="bg-neutral-900/40 border-neutral-850 backdrop-blur-md overflow-hidden shadow-xl">
+      <Card className="bg-[#18181b] border-2 border-[#365314] overflow-hidden shadow-xl rounded-sm">
         <CardContent className="p-0">
           {isLoading ? (
             /* Skeleton Loading State */
             <div className="p-6 space-y-4">
-              <div className="flex gap-4 border-b border-neutral-800 pb-3">
-                <Skeleton className="h-5 w-40 bg-neutral-800" />
-                <Skeleton className="h-5 w-32 bg-neutral-800" />
-                <Skeleton className="h-5 w-36 bg-neutral-800" />
+              <div className="flex gap-4 border-b border-slate-800 pb-3">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-5 w-36" />
               </div>
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="flex gap-4 items-center py-2">
-                  <Skeleton className="h-8 w-40 bg-neutral-800" />
-                  <Skeleton className="h-8 w-full bg-neutral-800" />
+                  <Skeleton className="h-8 w-40" />
+                  <Skeleton className="h-8 w-full" />
                 </div>
               ))}
             </div>
           ) : activeFields.length === 0 ? (
             /* No Fields Configuration State */
             <div className="flex flex-col items-center justify-center p-12 text-center">
-              <div className="p-4 rounded-full bg-neutral-800/40 text-neutral-500 mb-4">
+              <div className="p-4 rounded-sm bg-slate-950 border border-slate-800 text-slate-500 mb-4">
                 <LayersIcon className="size-10" />
               </div>
-              <h3 className="text-lg font-semibold text-neutral-300 mb-1">No Fields Available</h3>
-              <p className="text-sm text-muted-foreground max-w-sm mb-6">
+              <h3 className="text-lg font-bold font-pixel text-slate-200 mb-2">No Fields Available</h3>
+              <p className="text-sm text-slate-400 max-w-sm mb-6 leading-relaxed">
                 You must add fields to your form in the builder before you can view submissions.
               </p>
-              <Button asChild size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-foreground">
+              <Button asChild size="sm">
                 <Link href={`/dashboard/forms/${formId}`}>Configure Fields</Link>
               </Button>
             </div>
           ) : !hasSubmissions ? (
             /* No Submissions Captured State */
             <div className="flex flex-col items-center justify-center p-16 text-center">
-              <div className="p-4 rounded-full bg-neutral-800/40 text-neutral-500 mb-4 animate-pulse">
+              <div className="p-4 rounded-sm bg-slate-950 border border-slate-800 text-slate-500 mb-4 animate-pulse">
                 <InboxIcon className="size-12" />
               </div>
-              <h3 className="text-lg font-semibold text-neutral-350 mb-1">No Submissions Yet</h3>
-              <p className="text-sm text-neutral-500 max-w-xs mb-6">
+              <h3 className="text-lg font-bold font-pixel text-slate-200 mb-2">No Submissions Yet</h3>
+              <p className="text-sm text-slate-400 max-w-xs mb-6 leading-relaxed">
                 This form has not received any responses yet. Share your public link to start collecting submissions!
               </p>
-              <Button asChild variant="outline" size="sm" className="text-neutral-400 border-neutral-800 hover:bg-neutral-800">
+              <Button asChild variant="outline" size="sm">
                 <Link href={`/form/${formId}`} target="_blank">
                   View Public Form
                 </Link>
@@ -179,28 +179,25 @@ export default function SubmissionsPage({ params }: SubmissionsPageProps) {
           ) : (
             /* Tabular Submissions Display State */
             <div className="overflow-x-auto w-full max-w-full">
-              <Table>
-                <TableHeader className="bg-neutral-900/80 border-b border-neutral-800/60">
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="w-60 font-semibold text-neutral-300 py-3.5 px-6 whitespace-nowrap">
+              <Table className="border-0 shadow-none">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-60">
                       Submitted At
                     </TableHead>
                     {activeFields.map((field) => (
-                      <TableHead key={field.id} className="font-semibold text-neutral-300 py-3.5 px-6 whitespace-nowrap min-w-[150px]">
+                      <TableHead key={field.id} className="min-w-[150px]">
                         {field.label}
                       </TableHead>
                     ))}
                   </TableRow>
                 </TableHeader>
-                <TableBody className="divide-y divide-neutral-900">
+                <TableBody>
                   {submissions.map((submission) => (
-                    <TableRow
-                      key={submission.id}
-                      className="hover:bg-neutral-800/20 transition-colors duration-150"
-                    >
-                      <TableCell className="py-4 px-6 text-sm text-neutral-400 font-medium whitespace-nowrap">
+                    <TableRow key={submission.id}>
+                      <TableCell className="font-mono text-xs">
                         <div className="flex items-center gap-2">
-                          <CalendarIcon className="size-3.5 text-neutral-600 shrink-0" />
+                          <CalendarIcon className="size-3.5 text-slate-500 shrink-0" />
                           {formatDate(submission.createdAt)}
                         </div>
                       </TableCell>
@@ -211,21 +208,21 @@ export default function SubmissionsPage({ params }: SubmissionsPageProps) {
                         const displayValue = valObj?.value ?? ""
 
                         return (
-                          <TableCell key={field.id} className="py-4 px-6 text-sm text-neutral-350">
+                          <TableCell key={field.id}>
                             {displayValue === "" ? (
-                              <span className="text-neutral-600 font-light">—</span>
+                              <span className="text-slate-600 font-light">—</span>
                             ) : field.type === "YES_NO" ? (
                               displayValue === "true" ? (
-                                <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold px-2 py-0.5 rounded">
+                                <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold px-2 py-0.5 rounded-sm">
                                   Yes
                                 </Badge>
                               ) : (
-                                <Badge variant="secondary" className="bg-neutral-800 text-neutral-400 border border-neutral-750 text-xs font-semibold px-2 py-0.5 rounded">
+                                <Badge variant="secondary" className="bg-slate-800 text-slate-400 border border-slate-700 text-xs font-semibold px-2 py-0.5 rounded-sm">
                                   No
                                 </Badge>
                               )
                             ) : field.type === "PASSWORD" ? (
-                              <code className="text-xs tracking-widest text-neutral-500 bg-neutral-950/40 px-1.5 py-0.5 rounded">
+                              <code className="text-xs tracking-widest text-slate-400 bg-slate-950/40 px-1.5 py-0.5 rounded-sm font-mono">
                                 ••••••••
                               </code>
                             ) : (

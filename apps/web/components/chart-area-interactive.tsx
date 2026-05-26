@@ -132,11 +132,11 @@ const chartConfig = {
   },
   desktop: {
     label: "Desktop",
-    color: "var(--primary)",
+    color: "#84cc16",
   },
   mobile: {
     label: "Mobile",
-    color: "var(--primary)",
+    color: "#22c55e",
   },
 } satisfies ChartConfig
 
@@ -215,32 +215,38 @@ export function ChartAreaInteractive() {
         >
           <AreaChart data={filteredData}>
             <defs>
+              <filter id="glow-desktop" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#84cc16" floodOpacity="0.6" />
+              </filter>
+              <filter id="glow-mobile" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#22c55e" floodOpacity="0.6" />
+              </filter>
               <linearGradient id="fillDesktop" x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="5%"
-                  stopColor="var(--color-desktop)"
-                  stopOpacity={1.0}
+                  stopColor="#84cc16"
+                  stopOpacity={0.4}
                 />
                 <stop
                   offset="95%"
-                  stopColor="var(--color-desktop)"
-                  stopOpacity={0.1}
+                  stopColor="#84cc16"
+                  stopOpacity={0.0}
                 />
               </linearGradient>
               <linearGradient id="fillMobile" x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="5%"
-                  stopColor="var(--color-mobile)"
-                  stopOpacity={0.8}
+                  stopColor="#22c55e"
+                  stopOpacity={0.4}
                 />
                 <stop
                   offset="95%"
-                  stopColor="var(--color-mobile)"
-                  stopOpacity={0.1}
+                  stopColor="#22c55e"
+                  stopOpacity={0.0}
                 />
               </linearGradient>
             </defs>
-            <CartesianGrid vertical={false} />
+            <CartesianGrid vertical={false} stroke="#365314" strokeDasharray="3 3" opacity={0.6} />
             <XAxis
               dataKey="date"
               tickLine={false}
@@ -271,16 +277,20 @@ export function ChartAreaInteractive() {
             />
             <Area
               dataKey="mobile"
-              type="natural"
+              type="linear"
               fill="url(#fillMobile)"
-              stroke="var(--color-mobile)"
+              stroke="#22c55e"
+              strokeWidth={3}
+              filter="url(#glow-mobile)"
               stackId="a"
             />
             <Area
               dataKey="desktop"
-              type="natural"
+              type="linear"
               fill="url(#fillDesktop)"
-              stroke="var(--color-desktop)"
+              stroke="#84cc16"
+              strokeWidth={3}
+              filter="url(#glow-desktop)"
               stackId="a"
             />
           </AreaChart>

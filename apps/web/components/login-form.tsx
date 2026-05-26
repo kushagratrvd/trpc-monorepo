@@ -40,7 +40,7 @@ export function LoginForm({
   });
 
   const onSubmit: SubmitHandler<LoginFormValues> = async (values: LoginFormValues) => {
-    console.log(values);
+    //console.log(values);
     const { id } = await signInUserWithEmailAndPasswordAsync({
         email: values.email,
         password: values.password
@@ -61,7 +61,7 @@ export function LoginForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form>
+          <form onSubmit={handleSubmit(onSubmit)}>
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
@@ -70,6 +70,7 @@ export function LoginForm({
                   type="email"
                   placeholder="m@example.com"
                   required
+                  {...register("email", { required: true })}
                 />
               </Field>
               <Field>
@@ -82,7 +83,12 @@ export function LoginForm({
                     Forgot your password?
                   </a>
                 </div>
-                <Input id="password" type="password" required />
+                <Input 
+                  id="password" 
+                  type="password" 
+                  required 
+                  {...register("password", { required: true })}
+                />
               </Field>
               <Field>
                 <Button type="submit">Login</Button>
@@ -90,7 +96,7 @@ export function LoginForm({
                   Login with Google
                 </Button>
                 <FieldDescription className="text-center">
-                  Don&apos;t have an account? <a href="#">Sign up</a>
+                  Don&apos;t have an account? <a href="/signup" className="hover:text-[#84cc16] text-[#84cc16] underline underline-offset-4">Sign up</a>
                 </FieldDescription>
               </Field>
             </FieldGroup>

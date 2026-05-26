@@ -148,28 +148,24 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
   // Loading State
   if (isLoading) {
     return (
-      <div className="relative min-h-screen flex items-center justify-center p-4 bg-neutral-950 overflow-hidden">
-        {/* Neon Glow Blobs */}
-        <div className="absolute top-1/4 -left-12 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-1/4 -right-12 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <Card className="relative w-full max-w-xl bg-neutral-900/40 border-neutral-800/80 backdrop-blur-md overflow-hidden pt-6">
-          <div className="h-1.5 w-full bg-neutral-800 absolute top-0 left-0 animate-pulse" />
+      <div className="relative min-h-screen flex items-center justify-center p-4 bg-[#0f172a] overflow-hidden">
+        <Card className="relative w-full max-w-xl bg-[#18181b] border-2 border-[#365314] overflow-hidden pt-6 rounded-sm shadow-2xl">
+          <div className="h-1.5 w-full bg-slate-800 absolute top-0 left-0 animate-pulse" />
           <CardHeader className="space-y-3">
-            <Skeleton className="h-7 w-3/4 bg-neutral-800" />
-            <Skeleton className="h-4 w-5/6 bg-neutral-800" />
+            <Skeleton className="h-7 w-3/4" />
+            <Skeleton className="h-4 w-5/6" />
           </CardHeader>
           <CardContent className="space-y-6">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="space-y-2">
-                <Skeleton className="h-4 w-1/4 bg-neutral-800" />
-                <Skeleton className="h-9 w-full bg-neutral-800" />
-                <Skeleton className="h-3 w-1/2 bg-neutral-800" />
+                <Skeleton className="h-4 w-1/4" />
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-3 w-1/2" />
               </div>
             ))}
           </CardContent>
           <CardFooter className="pt-6">
-            <Skeleton className="h-9 w-24 bg-neutral-800" />
+            <Skeleton className="h-9 w-24" />
           </CardFooter>
         </Card>
       </div>
@@ -179,18 +175,15 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
   // Error State or Not Found
   if (error || !form) {
     return (
-      <div className="relative min-h-screen flex items-center justify-center p-4 bg-neutral-950 overflow-hidden">
-        <div className="absolute top-1/4 -left-12 w-80 h-80 bg-red-500/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-1/4 -right-12 w-80 h-80 bg-neutral-500/5 rounded-full blur-3xl pointer-events-none" />
-
-        <Card className="relative w-full max-w-md bg-neutral-900/40 border-neutral-800/80 backdrop-blur-md overflow-hidden pt-6 text-center">
+      <div className="relative min-h-screen flex items-center justify-center p-4 bg-[#0f172a] overflow-hidden">
+        <Card className="relative w-full max-w-md bg-[#18181b] border-2 border-destructive/50 overflow-hidden pt-6 text-center rounded-sm shadow-2xl">
           <div className="h-1.5 w-full bg-destructive absolute top-0 left-0" />
           <CardContent className="pt-6 flex flex-col items-center">
-            <div className="p-3.5 rounded-full bg-destructive/10 text-destructive mb-4 animate-bounce">
+            <div className="p-3.5 rounded-sm bg-destructive/10 text-destructive mb-4 animate-bounce border border-destructive/20">
               <AlertCircleIcon className="size-10" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">Form Not Found</h2>
-            <p className="text-sm text-muted-foreground mb-6">
+            <h2 className="text-xl font-bold font-pixel text-slate-200 mb-2">Form Not Found</h2>
+            <p className="text-sm text-slate-400 mb-6 leading-relaxed">
               The form you are looking for does not exist, has been disabled, or the link is incorrect.
             </p>
             <Button variant="outline" onClick={() => window.location.reload()}>
@@ -220,19 +213,16 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
   // Lock Screen State
   if (form && form.hasPassword && !isUnlocked) {
     return (
-      <div className="relative min-h-screen flex items-center justify-center p-4 bg-neutral-950 overflow-hidden">
-        <div className="absolute top-1/4 -left-12 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-1/4 -right-12 w-80 h-80 bg-neutral-500/5 rounded-full blur-3xl pointer-events-none" />
-
-        <Card className="relative w-full max-w-md bg-neutral-900/40 border-neutral-800/80 backdrop-blur-md overflow-hidden pt-6 shadow-2xl">
-          <div className="h-1.5 w-full bg-gradient-to-r from-amber-500 to-orange-500 absolute top-0 left-0" />
+      <div className="relative min-h-screen flex items-center justify-center p-4 bg-[#0f172a] overflow-hidden">
+        <Card className="relative w-full max-w-md bg-[#18181b] border-2 border-[#365314] overflow-hidden pt-6 shadow-2xl rounded-sm">
+          <div className="h-1.5 w-full bg-amber-500 absolute top-0 left-0" />
           <form onSubmit={handleUnlock}>
             <CardHeader className="text-center space-y-3 pb-2">
-              <div className="mx-auto p-4 rounded-full bg-amber-500/10 w-fit mb-2 border border-amber-500/20 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
+              <div className="mx-auto p-4 rounded-sm bg-amber-500/10 w-fit mb-2 border-2 border-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
                 <LockIcon className="size-8 text-amber-500" />
               </div>
-              <CardTitle className="text-2xl font-bold tracking-tight">{form.title}</CardTitle>
-              <CardDescription className="text-sm">
+              <CardTitle className="text-2xl font-black font-pixel tracking-wide text-white">{form.title}</CardTitle>
+              <CardDescription className="text-sm text-slate-400 font-mono">
                 This form is password protected.
               </CardDescription>
             </CardHeader>
@@ -243,18 +233,18 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
                   placeholder="Enter password..."
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="bg-neutral-950/50 border-neutral-800 text-center text-lg h-12 focus:border-amber-500/50 focus:ring-amber-500/20"
+                  className="bg-neutral-950/50 border-2 border-slate-800 text-center text-lg h-12 focus-visible:border-amber-500 focus-visible:ring-[3px] focus-visible:ring-amber-500/20 rounded-sm font-mono"
                   autoFocus
                 />
               </div>
               {unlockError && (
-                <div className="text-sm text-destructive text-center font-medium bg-destructive/10 py-2 rounded-lg border border-destructive/20 animate-fadeIn">
+                <div className="text-sm text-destructive text-center font-medium bg-destructive/10 py-2 rounded-sm border-2 border-destructive/30 animate-fadeIn font-mono">
                   {unlockError}
                 </div>
               )}
             </CardContent>
             <CardFooter>
-              <Button type="submit" disabled={isUnlocking || !password} className="w-full h-12 text-md font-semibold bg-amber-600 hover:bg-amber-500 text-white shadow-[0_0_15px_rgba(245,158,11,0.25)] transition-all">
+              <Button type="submit" disabled={isUnlocking || !password} className="w-full h-12 text-md font-bold font-mono uppercase bg-amber-600 hover:bg-amber-500 border-2 border-amber-800 text-slate-950 active:translate-y-[2px] rounded-sm transition-all shadow-md">
                 {isUnlocking ? "Verifying..." : "Unlock Form"}
                 {!isUnlocking && <ArrowRightIcon className="size-4 ml-2" />}
               </Button>
@@ -266,21 +256,17 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center p-4 bg-neutral-950 overflow-hidden">
-      {/* Premium Background Glow effects */}
-      <div className="absolute top-1/4 -left-12 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 -right-12 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-
-      <Card className="relative w-full max-w-xl bg-neutral-900/40 border-neutral-800/80 backdrop-blur-md overflow-hidden pt-6 shadow-2xl transition-all hover:border-neutral-700/50">
-        {/* Dynamic Gradient Bar at Top */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 absolute top-0 left-0" />
+    <div className="relative min-h-screen flex items-center justify-center p-4 bg-[#0f172a] overflow-hidden">
+      <Card className="relative w-full max-w-xl bg-[#18181b] border-2 border-[#365314] overflow-hidden pt-6 shadow-2xl rounded-sm">
+        {/* Dynamic Green Bar at Top */}
+        <div className="h-1.5 w-full bg-[#84cc16] absolute top-0 left-0" />
         
-        <CardHeader className="space-y-1.5 border-b border-neutral-850 pb-6">
-          <CardTitle className="text-2xl font-bold tracking-tight text-foreground">
+        <CardHeader className="space-y-1.5 border-b-2 border-slate-950 pb-6">
+          <CardTitle className="text-2xl font-black font-pixel tracking-wide text-white">
             {form.title}
           </CardTitle>
           {form.description && (
-            <CardDescription className="text-sm text-muted-foreground leading-relaxed">
+            <CardDescription className="text-sm text-slate-400 leading-relaxed font-mono">
               {form.description}
             </CardDescription>
           )}
@@ -310,16 +296,16 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
 
                 if (isYesNo) {
                   return (
-                    <Field key={field.id} orientation="horizontal" className="justify-between items-center py-2.5 border border-neutral-800/40 hover:border-neutral-800/80 bg-neutral-950/20 px-4 rounded-xl transition-all">
+                    <Field key={field.id} orientation="horizontal" className="justify-between items-center py-3 border-2 border-slate-800 hover:border-[#365314] bg-slate-950/20 px-4 rounded-sm transition-all">
                       <div className="flex flex-col gap-1 pr-4">
-                        <FieldLabel htmlFor={field.labelKey} className="text-sm font-medium leading-none cursor-pointer flex items-center">
+                        <FieldLabel htmlFor={field.labelKey} className="text-sm font-bold leading-none cursor-pointer flex items-center text-slate-200">
                           {field.label}
                           {field.isRequired && (
-                            <span className="text-destructive font-bold ml-1" title="Required">*</span>
+                            <span className="text-destructive font-bold ml-1 font-mono" title="Required">*</span>
                           )}
                         </FieldLabel>
                         {field.description && (
-                          <FieldDescription className="text-xs text-muted-foreground mt-0.5 leading-normal">
+                          <FieldDescription className="text-xs text-slate-400 mt-0.5 leading-normal font-mono">
                             {field.description}
                           </FieldDescription>
                         )}
@@ -343,15 +329,15 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
                 if (field.type === 'LONG_TEXT') {
                   return (
                     <Field key={field.id} className="space-y-2">
-                      <FieldLabel htmlFor={field.labelKey} className="text-sm font-medium flex items-center">
+                      <FieldLabel htmlFor={field.labelKey} className="text-sm font-bold flex items-center text-slate-200">
                         {field.label}
-                        {field.isRequired && <span className="text-destructive font-bold ml-1" title="Required">*</span>}
+                        {field.isRequired && <span className="text-destructive font-bold ml-1 font-mono" title="Required">*</span>}
                       </FieldLabel>
                       
                       <Textarea
                         id={field.labelKey}
                         placeholder={field.placeholder ?? undefined}
-                        className={`bg-neutral-950/30 border-neutral-800 text-foreground transition-all duration-200 placeholder:text-neutral-600 focus:border-indigo-500/70 focus:ring-indigo-500/20 ${errors[field.labelKey] ? 'border-destructive/60 focus:border-destructive' : ''}`}
+                        className={`bg-slate-950/30 border-2 border-slate-800 text-slate-100 placeholder:text-slate-650 focus-visible:border-[#84cc16] focus-visible:ring-[3px] focus-visible:ring-[#84cc16]/20 rounded-sm font-sans ${errors[field.labelKey] ? 'border-destructive focus-visible:border-destructive' : ''}`}
                         rows={4}
                         {...register(field.labelKey, {
                           required: field.isRequired ? `${field.label} is required` : false,
@@ -359,13 +345,13 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
                       />
 
                       {field.description && (
-                        <FieldDescription className="text-xs text-muted-foreground">
+                        <FieldDescription className="text-xs text-slate-400 font-mono">
                           {field.description}
                         </FieldDescription>
                       )}
 
                       {errors[field.labelKey] && (
-                        <FieldError className="text-xs font-medium text-destructive mt-1 flex items-center gap-1 animate-fadeIn">
+                        <FieldError className="text-xs font-semibold text-destructive mt-1 flex items-center gap-1 animate-fadeIn font-mono">
                           <AlertCircleIcon className="size-3.5" />
                           {errors[field.labelKey]?.message as string}
                         </FieldError>
@@ -377,11 +363,11 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
                 if (field.type === 'SINGLE_SELECT') {
                   return (
                     <Field key={field.id} className="space-y-3">
-                      <FieldLabel className="text-sm font-medium flex items-center">
+                      <FieldLabel className="text-sm font-bold flex items-center text-slate-200">
                         {field.label}
-                        {field.isRequired && <span className="text-destructive font-bold ml-1" title="Required">*</span>}
+                        {field.isRequired && <span className="text-destructive font-bold ml-1 font-mono" title="Required">*</span>}
                       </FieldLabel>
-                      {field.description && <FieldDescription className="text-xs text-muted-foreground">{field.description}</FieldDescription>}
+                      {field.description && <FieldDescription className="text-xs text-slate-400 font-mono">{field.description}</FieldDescription>}
                       
                       <Controller
                         control={control}
@@ -391,8 +377,8 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
                           <RadioGroup onValueChange={onChange} value={value} className="space-y-2">
                             {field.options?.map((option: string) => (
                               <div key={option} className="flex items-center space-x-2">
-                                <RadioGroupItem value={option} id={`${field.labelKey}-${option}`} className="border-neutral-700 text-indigo-500" />
-                                <label htmlFor={`${field.labelKey}-${option}`} className="text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-neutral-300">
+                                <RadioGroupItem value={option} id={`${field.labelKey}-${option}`} className="border-2 border-slate-800 text-[#84cc16] focus-visible:ring-[3px] focus-visible:ring-[#84cc16]/20" />
+                                <label htmlFor={`${field.labelKey}-${option}`} className="text-sm font-medium leading-none cursor-pointer text-slate-350">
                                   {option}
                                 </label>
                               </div>
@@ -402,7 +388,7 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
                       />
                       
                       {errors[field.labelKey] && (
-                        <FieldError className="text-xs font-medium text-destructive mt-1 flex items-center gap-1 animate-fadeIn">
+                        <FieldError className="text-xs font-semibold text-destructive mt-1 flex items-center gap-1 animate-fadeIn font-mono">
                           <AlertCircleIcon className="size-3.5" />
                           {errors[field.labelKey]?.message as string}
                         </FieldError>
@@ -414,11 +400,11 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
                 if (field.type === 'MULTI_SELECT') {
                   return (
                     <Field key={field.id} className="space-y-3">
-                      <FieldLabel className="text-sm font-medium flex items-center">
+                      <FieldLabel className="text-sm font-bold flex items-center text-slate-200">
                         {field.label}
-                        {field.isRequired && <span className="text-destructive font-bold ml-1" title="Required">*</span>}
+                        {field.isRequired && <span className="text-destructive font-bold ml-1 font-mono" title="Required">*</span>}
                       </FieldLabel>
-                      {field.description && <FieldDescription className="text-xs text-muted-foreground">{field.description}</FieldDescription>}
+                      {field.description && <FieldDescription className="text-xs text-slate-400 font-mono">{field.description}</FieldDescription>}
                       
                       <Controller
                         control={control}
@@ -445,9 +431,9 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
                                         : (value || []).filter((v: string) => v !== option);
                                       onChange(newValue);
                                     }}
-                                    className="border-neutral-700 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
+                                    className="border-2 border-slate-800 data-[state=checked]:bg-[#84cc16] data-[state=checked]:border-[#365314] rounded-sm"
                                   />
-                                  <label htmlFor={`${field.labelKey}-${option}`} className="text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-neutral-300">
+                                  <label htmlFor={`${field.labelKey}-${option}`} className="text-sm font-medium leading-none cursor-pointer text-slate-350">
                                     {option}
                                   </label>
                                 </div>
@@ -458,7 +444,7 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
                       />
                       
                       {errors[field.labelKey] && (
-                        <FieldError className="text-xs font-medium text-destructive mt-1 flex items-center gap-1 animate-fadeIn">
+                        <FieldError className="text-xs font-semibold text-destructive mt-1 flex items-center gap-1 animate-fadeIn font-mono">
                           <AlertCircleIcon className="size-3.5" />
                           {errors[field.labelKey]?.message as string}
                         </FieldError>
@@ -469,10 +455,10 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
 
                 return (
                   <Field key={field.id} className="space-y-2">
-                    <FieldLabel htmlFor={field.labelKey} className="text-sm font-medium flex items-center">
+                    <FieldLabel htmlFor={field.labelKey} className="text-sm font-bold flex items-center text-slate-200">
                       {field.label}
                       {field.isRequired && (
-                        <span className="text-destructive font-bold ml-1" title="Required">*</span>
+                        <span className="text-destructive font-bold ml-1 font-mono" title="Required">*</span>
                       )}
                     </FieldLabel>
                     
@@ -481,7 +467,7 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
                         id={field.labelKey}
                         type={getInputType(field.type)}
                         placeholder={field.placeholder ?? undefined}
-                        className={`bg-neutral-950/30 border-neutral-800 text-foreground transition-all duration-200 placeholder:text-neutral-600 focus:border-indigo-500/70 focus:ring-indigo-500/20 ${errors[field.labelKey] ? 'border-destructive/60 focus:border-destructive' : ''}`}
+                        className={`bg-slate-950/30 border-2 border-slate-800 text-slate-100 placeholder:text-slate-650 focus-visible:border-[#84cc16] focus-visible:ring-[3px] focus-visible:ring-[#84cc16]/20 rounded-sm font-sans ${errors[field.labelKey] ? 'border-destructive focus-visible:border-destructive' : ''}`}
                         {...register(field.labelKey, {
                           required: field.isRequired ? `${field.label} is required` : false,
                           pattern: field.type === "EMAIL" ? {
@@ -493,13 +479,13 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
                     </div>
 
                     {field.description && (
-                      <FieldDescription className="text-xs text-muted-foreground">
+                      <FieldDescription className="text-xs text-slate-400 font-mono">
                         {field.description}
                       </FieldDescription>
                     )}
 
                     {errors[field.labelKey] && (
-                      <FieldError className="text-xs font-medium text-destructive mt-1 flex items-center gap-1 animate-fadeIn">
+                      <FieldError className="text-xs font-semibold text-destructive mt-1 flex items-center gap-1 animate-fadeIn font-mono">
                         <AlertCircleIcon className="size-3.5" />
                         {errors[field.labelKey]?.message as string}
                       </FieldError>
@@ -508,34 +494,34 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
                 )
               })
             ) : (
-              <div className="flex flex-col items-center justify-center py-10 text-center border border-dashed border-neutral-800 rounded-2xl bg-neutral-950/15">
-                <HelpCircleIcon className="size-10 text-neutral-600 mb-3" />
-                <h3 className="text-base font-semibold text-neutral-400 mb-1">Empty Form</h3>
-                <p className="text-sm text-neutral-500 max-w-xs">
+              <div className="flex flex-col items-center justify-center py-10 text-center border-2 border-dashed border-[#365314]/50 rounded-sm bg-[#18181b]/55 p-6">
+                <HelpCircleIcon className="size-10 text-slate-500 mb-3" />
+                <h3 className="text-base font-bold font-pixel text-slate-350 mb-1">Empty Form</h3>
+                <p className="text-xs text-slate-450 max-w-xs leading-relaxed font-mono">
                   This form does not have any fields configured yet. Please check back later.
                 </p>
               </div>
             )}
 
             {submitError && (
-              <div className="p-3.5 rounded-xl border border-destructive/20 bg-destructive/10 text-destructive text-sm flex items-start gap-2.5 animate-fadeIn">
+              <div className="p-3.5 rounded-sm border-2 border-destructive/30 bg-destructive/10 text-destructive text-sm flex items-start gap-2.5 animate-fadeIn font-mono">
                 <AlertCircleIcon className="size-5 shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <span className="font-semibold text-destructive">Submission Error:</span> {submitError}
+                  <span className="font-bold text-destructive">Submission Error:</span> {submitError}
                 </div>
               </div>
             )}
           </CardContent>
 
-          <CardFooter className="border-t border-neutral-850/80 pt-6 pb-6 flex items-center justify-between">
-            <p className="text-xs text-neutral-500">
+          <CardFooter className="border-t-2 border-slate-950 pt-6 pb-6 flex items-center justify-between">
+            <p className="text-xs text-slate-500 font-mono">
               Never share passwords or sensitive information.
             </p>
             {fieldsToRender.length > 0 && (
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-indigo-600 text-foreground hover:bg-indigo-500 font-semibold px-6 shadow-[0_0_15px_rgba(99,102,241,0.25)] hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all duration-200"
+                className="font-mono text-xs uppercase tracking-wider px-6"
               >
                 {isSubmitting ? "Submitting..." : "Submit"}
               </Button>

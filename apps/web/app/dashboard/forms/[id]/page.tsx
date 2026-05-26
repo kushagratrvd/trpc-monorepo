@@ -210,7 +210,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
                         Back
                     </Link>
                 </Button>
-                <h1 className="text-2xl font-bold">Form Builder</h1>
+                <h1 className="text-2xl font-black font-pixel tracking-wide text-white">Form Builder</h1>
             </div>
 
             {/* Toolbar */}
@@ -237,7 +237,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
                     </Select>
                     <Button asChild size="sm" variant="outline" className="border-neutral-800 text-neutral-350 hover:bg-neutral-800 bg-neutral-900/40">
                         <Link href={`/dashboard/forms/${formId}/analytics`}>
-                            <BarChart3Icon className="size-4 mr-1.5 text-indigo-400" />
+                            <BarChart3Icon className="size-4 mr-1.5 text-[#84cc16]" />
                             Analytics
                         </Link>
                     </Button>
@@ -270,7 +270,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
             <div className="space-y-3">
                 {isLoading ? (
                     Array.from({ length: 3 }).map((_, i) => (
-                        <div key={i} className="rounded-lg border p-4">
+                        <div key={i} className="rounded-sm border-2 border-slate-800 p-4 bg-[#18181b]">
                             <div className="flex items-center gap-3">
                                 <Skeleton className="h-5 w-32" />
                                 <Skeleton className="h-5 w-16" />
@@ -282,30 +282,30 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
                     fields.fields.map((field) => (
                         <div
                             key={field.labelKey}
-                            className="group rounded-lg border p-4 transition-colors hover:bg-muted/50"
+                            className="group rounded-sm border-2 border-slate-800 p-4 transition-colors bg-[#18181b] hover:bg-slate-800/40 hover:border-[#365314]"
                         >
                             <div className="flex items-start justify-between gap-4">
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <span className="font-medium truncate">
+                                        <span className="font-bold text-slate-100">
                                             {field.label}
                                         </span>
-                                        <Badge variant="secondary">
+                                        <Badge variant="secondary" className="rounded-sm font-mono text-[10px] uppercase">
                                             {FIELD_TYPE_LABELS[field.type as FieldType] ?? field.type}
                                         </Badge>
                                         {field.isRequired && (
-                                            <Badge variant="outline" className="text-xs">
+                                            <Badge variant="outline" className="text-[10px] rounded-sm font-bold font-mono uppercase bg-red-500/10 text-red-400 border-red-500/20">
                                                 Required
                                             </Badge>
                                         )}
                                     </div>
                                     {field.description && (
-                                        <p className="text-sm text-muted-foreground truncate">
+                                        <p className="text-sm text-slate-400 truncate">
                                             {field.description}
                                         </p>
                                     )}
-                                    <p className="text-xs text-muted-foreground/60 mt-1">
-                                        Key: <code className="rounded bg-muted px-1 py-0.5">{field.labelKey}</code>
+                                    <p className="text-xs text-slate-500 mt-1 font-mono">
+                                        Key: <code className="rounded-sm bg-slate-950 px-1.5 py-0.5 border border-slate-800">{field.labelKey}</code>
                                     </p>
                                 </div>
 
@@ -338,8 +338,8 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
                         </div>
                     ))
                 ) : (
-                    <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-                        <p className="text-lg font-medium mb-1">No fields yet</p>
+                    <div className="rounded-sm border-2 border-dashed border-[#365314]/50 p-8 text-center text-slate-400 bg-[#18181b]/50">
+                        <p className="text-lg font-bold font-pixel text-slate-200 mb-1">No fields yet</p>
                         <p className="text-sm">
                             Click &ldquo;Add Field&rdquo; to start building your form.
                         </p>
@@ -571,15 +571,15 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
                     </DialogHeader>
                     <div className="flex flex-col items-center justify-center py-6 space-y-6">
                         {formData?.visibility === "UNPUBLISHED" && (
-                            <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/20 p-3 rounded-md w-full">
+                            <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/20 p-3 rounded-sm w-full font-mono">
                                 <AlertTriangleIcon className="size-5 text-amber-500 shrink-0 mt-0.5" />
-                                <div className="text-sm text-amber-500/90 leading-tight">
+                                <div className="text-xs text-amber-500/90 leading-tight">
                                     <strong className="block text-amber-500 mb-1">Form is Unpublished!</strong>
                                     Respondents can open this link, but they cannot submit responses until you change visibility to Public or Unlisted.
                                 </div>
                             </div>
                         )}
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-neutral-200">
+                        <div className="bg-white p-4 rounded-sm shadow-sm border-2 border-[#365314]">
                             <QRCodeCanvas 
                                 value={absoluteUrl} 
                                 size={180}
@@ -589,14 +589,14 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
                             />
                         </div>
                         <div className="w-full space-y-2">
-                            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Public Link</p>
+                            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider font-mono">Public Link</p>
                             <div className="flex items-center gap-2">
                                 <Input 
                                     readOnly 
                                     value={absoluteUrl} 
                                     className="bg-neutral-900 font-mono text-xs text-neutral-300"
                                 />
-                                <Button size="sm" onClick={handleCopyLink} className="shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white">
+                                <Button size="sm" onClick={handleCopyLink} className="shrink-0">
                                     {hasCopied ? <CheckIcon className="size-4" /> : <CopyIcon className="size-4" />}
                                 </Button>
                             </div>

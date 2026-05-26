@@ -1,5 +1,6 @@
 import { z, zodUndefinedModel } from "../../schema";
 import { userService } from "../../services";
+import { TRPCError } from "@trpc/server";
 import { getAuthenticationMethodOutputSchema } from "@repo/services/user/model";
 import { authenticatedProcedure, publicProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
@@ -101,13 +102,23 @@ export const authRouter = router({
     .mutation(async ({ input, ctx }) => {
       const token = input.refreshToken || ctx.getCookie('refresh-token');
       if (!token) {
-        throw ApiError.unauthorized("No refresh token provided", "MISSING_REFRESH_TOKEN");
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "No refresh token provided"
+        });
       }
       
-      const { accessToken, refreshToken } = await userService.refreshUserSession({ refreshToken: token });
-      setAuthenticationCookies(ctx, accessToken, refreshToken);
-      
-      return { success: true };
+      try {
+        const { accessToken, refreshToken } = await userService.refreshUserSession({ refreshToken: token });
+        setAuthenticationCookies(ctx, accessToken, refreshToken);
+        return { success: true };
+      } catch (error) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: error instanceof Error ? error.message : "Refresh session failed",
+          cause: error
+        });
+      }
     }),
 
   getLoggedInUserInfo: authenticatedProcedure

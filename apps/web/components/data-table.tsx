@@ -321,7 +321,7 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
       data-state={row.getIsSelected() && "selected"}
       data-dragging={isDragging}
       ref={setNodeRef}
-      className="relative z-0 data-[dragging=true]:z-10 data-[dragging=true]:opacity-80"
+      className="relative z-0 data-[dragging=true]:z-10 data-[dragging=true]:opacity-80 hover:bg-[#84cc16]/5 border-b border-slate-900/60"
       style={{
         transform: CSS.Transform.toString(transform),
         transition: transition,
@@ -479,7 +479,7 @@ export function DataTable({
         value="outline"
         className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6"
       >
-        <div className="overflow-hidden rounded-lg border">
+        <div className="overflow-hidden rounded-sm min-w-0 w-full">
           <DndContext
             collisionDetection={closestCenter}
             modifiers={[restrictToVerticalAxis]}
@@ -488,12 +488,12 @@ export function DataTable({
             id={sortableId}
           >
             <Table>
-              <TableHeader className="sticky top-0 z-10 bg-muted">
+              <TableHeader className="sticky top-0 z-10 bg-[#111827] border-b-2 border-[#365314]">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => {
                       return (
-                        <TableHead key={header.id} colSpan={header.colSpan}>
+                        <TableHead key={header.id} colSpan={header.colSpan} className="font-pixel uppercase tracking-widest text-[11px] text-[#84cc16] bg-[#111827] border-b-2 border-[#365314] h-11 px-4">
                           {header.isPlaceholder
                             ? null
                             : flexRender(
@@ -566,43 +566,40 @@ export function DataTable({
             </div>
             <div className="ml-auto flex items-center gap-2 lg:ml-0">
               <Button
-                variant="outline"
-                className="hidden h-8 w-8 p-0 lg:flex"
+                variant="ghost"
+                className="hidden size-8 lg:flex bg-[#18181b] border-2 border-[#365314] hover:bg-[#84cc16]/10 text-slate-300 disabled:opacity-30 rounded-sm items-center justify-center transition-all p-0"
                 onClick={() => table.setPageIndex(0)}
                 disabled={!table.getCanPreviousPage()}
               >
                 <span className="sr-only">Go to first page</span>
-                <IconChevronsLeft />
+                <IconChevronsLeft className="size-4" />
               </Button>
               <Button
-                variant="outline"
-                className="size-8"
-                size="icon"
+                variant="ghost"
+                className="size-8 bg-[#18181b] border-2 border-[#365314] hover:bg-[#84cc16]/10 text-slate-300 disabled:opacity-30 rounded-sm flex items-center justify-center transition-all p-0"
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
               >
                 <span className="sr-only">Go to previous page</span>
-                <IconChevronLeft />
+                <IconChevronLeft className="size-4" />
               </Button>
               <Button
-                variant="outline"
-                className="size-8"
-                size="icon"
+                variant="ghost"
+                className="size-8 bg-[#18181b] border-2 border-[#365314] hover:bg-[#84cc16]/10 text-slate-300 disabled:opacity-30 rounded-sm flex items-center justify-center transition-all p-0"
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
               >
                 <span className="sr-only">Go to next page</span>
-                <IconChevronRight />
+                <IconChevronRight className="size-4" />
               </Button>
               <Button
-                variant="outline"
-                className="hidden size-8 lg:flex"
-                size="icon"
+                variant="ghost"
+                className="hidden size-8 lg:flex bg-[#18181b] border-2 border-[#365314] hover:bg-[#84cc16]/10 text-slate-300 disabled:opacity-30 rounded-sm items-center justify-center transition-all p-0"
                 onClick={() => table.setPageIndex(table.getPageCount() - 1)}
                 disabled={!table.getCanNextPage()}
               >
                 <span className="sr-only">Go to last page</span>
-                <IconChevronsRight />
+                <IconChevronsRight className="size-4" />
               </Button>
             </div>
           </div>

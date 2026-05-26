@@ -38,7 +38,7 @@ import {
 const data = {
   user: {
     name: "shadcn",
-    email: "m@example.com",
+    email: "name@mail.com",
     avatar: "/avatars/shadcn.jpg",
   },
   navMain: [
@@ -103,8 +103,13 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader>
+    <Sidebar collapsible="offcanvas" className="relative border-r-2 border-[#365314]!" {...props}>
+      {/* Repeating deepslate overlay texture */}
+      <div 
+        className="absolute inset-0 pointer-events-none opacity-[0.03] z-0 bg-repeat" 
+        style={{ backgroundImage: "url('/assets/minecraft/blocks/Cobbled_Deepslate.png')", imageRendering: "pixelated" }}
+      />
+      <SidebarHeader className="z-10 relative">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
@@ -113,18 +118,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               <a href="#">
                 <IconInnerShadowTop className="size-5!" />
-                <span className="text-base font-semibold">Acme Inc.</span>
+                <span className="text-base font-semibold">Formz</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="z-10 relative">
         <NavMain items={data.navMain} />
         <NavDocuments items={data.documents} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="z-10 relative">
         <NavUser user={data.user} />
       </SidebarFooter>
     </Sidebar>

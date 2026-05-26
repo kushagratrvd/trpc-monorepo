@@ -28,16 +28,26 @@ export const tRPCContext = initTRPC
         };
       }
 
-      // 2. Custom ApiError
-      if (cause instanceof ApiError) {
+      // 2. Custom ApiError (Safer fallback for cross-package class prototypes)
+      const isApiError = cause instanceof ApiError || (
+        cause &&
+        typeof cause === "object" &&
+        "statusCode" in cause &&
+        "code" in cause &&
+        typeof (cause as any).statusCode === "number" &&
+        typeof (cause as any).code === "string"
+      );
+
+      if (isApiError) {
+        const apiError = cause as any;
         return {
           ...shape,
-          message: cause.message,
+          message: apiError.message,
           data: {
             ...shape.data,
-            code: cause.code,
-            statusCode: cause.statusCode,
-            details: cause.details,
+            code: apiError.code,
+            statusCode: apiError.statusCode,
+            details: apiError.details,
           }
         };
       }
@@ -60,19 +70,29 @@ export const router = tRPCContext.router;
 export const publicProcedure = tRPCContext.procedure;
 
 export const authenticatedProcedure = tRPCContext.procedure.use(async options => {
-
   const { ctx } = options
   const userToken = getAuthenticationCookie(ctx)
-  if(!userToken) {
-    throw ApiError.unauthorized("User is not logged in", "UNAUTHORIZED");
+  if (!userToken) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "User is not logged in",
+      cause: ApiError.unauthorized("User is not logged in", "UNAUTHORIZED")
+    });
   }
 
-  const { id } = await userService.verifyAndDecodeUserToken(userToken)
-
-  return options.next({
-    ctx: {
-      ...ctx, 
-      user: { id }
-    }
-  })
+  try {
+    const { id } = await userService.verifyAndDecodeUserToken(userToken)
+    return options.next({
+      ctx: {
+        ...ctx, 
+        user: { id }
+      }
+    })
+  } catch (error) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Invalid or expired token",
+      cause: error
+    });
+  }
 })

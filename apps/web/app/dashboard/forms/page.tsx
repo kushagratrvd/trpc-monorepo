@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import Image from "next/image"
 import { useForm, type SubmitHandler } from "react-hook-form"
-import { useCreateForm, useListForms } from "~/hooks/api/form"
+import { useCreateForm, useListForms, useCloneForm } from "~/hooks/api/form"
+import { toast } from "sonner"
 import { Button } from "~/components/ui/button"
 import {
     Dialog, 
@@ -40,10 +43,30 @@ type CreateFormValues = {
 }
 
 export default function FormsPage() {
+    const router = useRouter()
     const [open, setOpen] = useState(false)
 
     const { createFormAsync, status } = useCreateForm()
     const { forms, isLoading } = useListForms()
+    const { cloneFormAsync, status: cloneStatus } = useCloneForm()
+    const [cloningId, setCloningId] = useState<string | null>(null)
+
+    const handleClone = async (formId: string) => {
+        setCloningId(formId)
+        try {
+            const result = await cloneFormAsync({ formId })
+            toast.success("Form duplicated successfully", {
+                action: {
+                    label: "Edit Clone",
+                    onClick: () => window.location.href = `/dashboard/forms/${result.id}`,
+                },
+            })
+        } catch (err: any) {
+            toast.error(err?.message || "Failed to duplicate form")
+        } finally {
+            setCloningId(null)
+        }
+    }
 
     const form = useForm<CreateFormValues>({
         defaultValues: {
@@ -92,12 +115,12 @@ export default function FormsPage() {
     return (
         <div className="p-6">
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold">Forms</h1>
+                <h1 className="text-2xl font-black font-pixel tracking-wide text-white">Forms</h1>
                 <Button onClick={() => setOpen(true)}>Create Form</Button>
             </div>
 
             {/* Forms Table */}
-            <div className="rounded-md border">
+            <div className="overflow-hidden rounded-sm min-w-0 w-full">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -121,12 +144,55 @@ export default function FormsPage() {
                             ))
                         ) : forms && forms.length > 0 ? (
                             forms.map((f) => (
-                                <TableRow key={f.id}>
+                                <TableRow
+                                    key={f.id}
+                                    className="cursor-pointer hover:bg-muted/50"
+                                    onClick={() => router.push(`/dashboard/forms/${f.id}`)}
+                                >
                                     <TableCell className="font-medium">{f.title}</TableCell>
                                     <TableCell>
-                                        <Badge variant={f.visibility === 'PUBLIC' ? 'default' : f.visibility === 'UNLISTED' ? 'secondary' : 'outline'}>
-                                            {f.visibility === 'PUBLIC' ? 'Public' : f.visibility === 'UNLISTED' ? 'Unlisted' : 'Draft'}
-                                        </Badge>
+                                        <div className="flex items-center gap-2">
+                                            {f.visibility === 'PUBLIC' ? (
+                                                <>
+                                                    <div className="relative w-5 h-5 shrink-0">
+                                                        <Image 
+                                                            src="/assets/minecraft/icons/Emerald_Shield.png" 
+                                                            alt="Public" 
+                                                            fill 
+                                                            className="object-contain" 
+                                                            style={{ imageRendering: 'pixelated' }}
+                                                        />
+                                                    </div>
+                                                    <span className="text-sm font-semibold text-emerald-400">Public</span>
+                                                </>
+                                            ) : f.visibility === 'UNLISTED' ? (
+                                                <>
+                                                    <div className="relative w-5 h-5 shrink-0">
+                                                        <Image 
+                                                            src="/assets/minecraft/icons/Ender_Pearl.png" 
+                                                            alt="Unlisted" 
+                                                            fill 
+                                                            className="object-contain" 
+                                                            style={{ imageRendering: 'pixelated' }}
+                                                        />
+                                                    </div>
+                                                    <span className="text-sm font-semibold text-purple-400">Unlisted</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className="relative w-5 h-5 shrink-0">
+                                                        <Image 
+                                                            src="/assets/minecraft/blocks/Barrier.png" 
+                                                            alt="Draft" 
+                                                            fill 
+                                                            className="object-contain" 
+                                                            style={{ imageRendering: 'pixelated' }}
+                                                        />
+                                                    </div>
+                                                    <span className="text-sm font-semibold text-red-400 font-mono tracking-wide">Draft</span>
+                                                </>
+                                            )}
+                                        </div>
                                     </TableCell>
                                     <TableCell className="text-muted-foreground max-w-xs truncate">
                                         {f.description || "—"}
@@ -136,8 +202,19 @@ export default function FormsPage() {
                                             ? new Date(f.createdAt).toLocaleDateString()
                                             : "—"}
                                     </TableCell>
-                                    <TableCell className="text-right">
-                                        <Button asChild size="sm" variant="outline">
+                                    <TableCell className="text-right space-x-2">
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            disabled={cloningId === f.id}
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                handleClone(f.id)
+                                            }}
+                                        >
+                                            {cloningId === f.id ? "Cloning…" : "Clone"}
+                                        </Button>
+                                        <Button asChild size="sm" variant="outline" onClick={(e) => e.stopPropagation()}>
                                             <Link href={`/dashboard/forms/${f.id}`}>
                                                 Edit
                                             </Link>
@@ -147,7 +224,7 @@ export default function FormsPage() {
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                                     No forms yet. Create one to get started.
                                 </TableCell>
                             </TableRow>
