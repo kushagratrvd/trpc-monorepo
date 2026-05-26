@@ -291,3 +291,25 @@ export const useUpdateFormVisibility = (formId: string) => {
         status
     }
 }
+
+export const useCloneForm = () => {
+    const utils = trpc.useUtils()
+
+    const {
+        mutateAsync: cloneFormAsync,
+        error,
+        isError,
+        status,
+    } = trpc.form.cloneForm.useMutation({
+        onSuccess: async () => {
+            await utils.form.listForms.invalidate()
+        }
+    })
+
+    return {
+        cloneFormAsync,
+        error,
+        isError,
+        status,
+    }
+}

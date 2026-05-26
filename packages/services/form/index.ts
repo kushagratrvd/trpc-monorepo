@@ -1,6 +1,6 @@
-import { asc, desc, db, eq, sql } from '@repo/database'
+import { asc, desc, db, eq, sql, and } from '@repo/database'
 import { formFieldsTable, formsTable } from '@repo/database/schema'
-import { createFormInput, listFormsByUserIdInput, ListFormsByUserIdInputType, type CreateFormInputType, getFormByIdInput, type GetFormByIdInputType, updateFormVisibilityInput, type UpdateFormVisibilityInputType, updateFormSettingsInput, type UpdateFormSettingsInputType } from './model'
+import { createFormInput, listFormsByUserIdInput, ListFormsByUserIdInputType, type CreateFormInputType, getFormByIdInput, type GetFormByIdInputType, updateFormVisibilityInput, type UpdateFormVisibilityInputType, updateFormSettingsInput, type UpdateFormSettingsInputType, cloneFormInput, type CloneFormInputType } from './model'
 import { ApiError } from "../errors"
 
 class FormService {
@@ -116,6 +116,62 @@ class FormService {
             .where(eq(formsTable.id, formId))
             
         return { success: true }
+    }
+
+    public async cloneForm(payload: CloneFormInputType) {
+        const { formId, userId } = await cloneFormInput.parseAsync(payload)
+
+        const sourceForm = await db.select().from(formsTable).where(eq(formsTable.id, formId)).then(r => r[0])
+        if (!sourceForm) {
+            throw ApiError.notFound("Form not found", "FORM_NOT_FOUND")
+        }
+
+        if (sourceForm.createdBy !== userId) {
+            throw ApiError.forbidden("You can only clone your own forms", "FORBIDDEN")
+        }
+
+        const suffix = " (Copy)"
+        const newTitle = sourceForm.title.slice(0, 55 - suffix.length) + suffix
+
+        const sourceFields = await db.select()
+            .from(formFieldsTable)
+            .where(eq(formFieldsTable.formId, formId))
+            .orderBy(asc(formFieldsTable.index))
+
+        // Transaction: insert form + duplicate all fields atomically
+        const result = await db.transaction(async (tx) => {
+            const [newForm] = await tx.insert(formsTable).values({
+                title: newTitle,
+                description: sourceForm.description,
+                password: sourceForm.password,
+                visibility: 'UNPUBLISHED',
+                createdBy: userId,
+            }).returning({ id: formsTable.id })
+
+            if (!newForm?.id) {
+                throw ApiError.internal("Failed to clone form", "CLONE_FAILED")
+            }
+
+            if (sourceFields.length > 0) {
+                await tx.insert(formFieldsTable).values(
+                    sourceFields.map(f => ({
+                        formId: newForm.id,
+                        label: f.label,
+                        labelKey: f.labelKey,
+                        type: f.type,
+                        description: f.description,
+                        placeholder: f.placeholder,
+                        isRequired: f.isRequired,
+                        index: f.index,
+                        options: f.options,
+                    }))
+                )
+            }
+
+            return { id: newForm.id }
+        })
+
+        return result
     }
 }
 

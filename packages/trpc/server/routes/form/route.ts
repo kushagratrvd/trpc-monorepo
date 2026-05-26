@@ -25,6 +25,8 @@ import {
     updateFormSettingsOutputModel,
     getFormAnalyticsInputModel,
     getFormAnalyticsOutputModel,
+    cloneFormInputModel,
+    cloneFormOutputModel,
 } from "./model";
 import { generatePath } from "../../utils/path-generator";
 import { formService, formFieldService, formSubmissionService, userService } from "../../services";
@@ -274,5 +276,19 @@ export const formRouter = router({
             }
             
             return formSubmissionService.getFormAnalytics({ formId })
+        }),
+
+    cloneForm: authenticatedProcedure.meta({
+        openapi: {
+            method: 'POST',
+            path: getPath('/cloneForm'),
+            tags: TAGS,
+            protect: true,
+        }
+    })
+        .input(cloneFormInputModel)
+        .output(cloneFormOutputModel)
+        .mutation(async ({ input, ctx }) => {
+            return formService.cloneForm({ formId: input.formId, userId: ctx.user.id })
         }),
 });

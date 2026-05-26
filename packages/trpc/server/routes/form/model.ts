@@ -186,3 +186,12 @@ export const getFormAnalyticsOutputModel = z.object({
         count: z.number().describe('Number of submissions on that date'),
     })).describe('Submission counts grouped by date'),
 })
+
+export const cloneFormInputModel = z.object({
+    formId: z.string().uuid().describe('UUID of the form to clone'),
+})
+
+export const cloneFormOutputModel = z.object({
+    id: z.string().uuid().describe('UUID of the newly created clone'),
+})
+

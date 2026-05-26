@@ -35,3 +35,10 @@ export const updateFormSettingsInput = z.object({
 
 export type UpdateFormSettingsInputType = z.infer<typeof updateFormSettingsInput>
 
+export const cloneFormInput = z.object({
+    formId: z.string().uuid().describe('UUID of the form to clone'),
+    userId: z.string().uuid().describe('UUID of the requesting user (for ownership validation)'),
+})
+
+export type CloneFormInputType = z.infer<typeof cloneFormInput>
+
