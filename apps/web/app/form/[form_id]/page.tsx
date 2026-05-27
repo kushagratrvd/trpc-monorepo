@@ -182,7 +182,7 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
             <div className="p-3.5 rounded-sm bg-destructive/10 text-destructive mb-4 animate-bounce border border-destructive/20">
               <AlertCircleIcon className="size-10" />
             </div>
-            <h2 className="text-xl font-bold font-pixel text-slate-200 mb-2">Form Not Found</h2>
+            <h2 className="text-xl font-bold text-slate-200 mb-2">Form Not Found</h2>
             <p className="text-sm text-slate-400 mb-6 leading-relaxed">
               The form you are looking for does not exist, has been disabled, or the link is incorrect.
             </p>
@@ -221,8 +221,8 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
               <div className="mx-auto p-4 rounded-sm bg-amber-500/10 w-fit mb-2 border-2 border-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
                 <LockIcon className="size-8 text-amber-500" />
               </div>
-              <CardTitle className="text-2xl font-black font-pixel tracking-wide text-white">{form.title}</CardTitle>
-              <CardDescription className="text-sm text-slate-400 font-mono">
+              <CardTitle className="text-2xl font-bold text-white">{form.title}</CardTitle>
+              <CardDescription className="text-sm text-slate-400">
                 This form is password protected.
               </CardDescription>
             </CardHeader>
@@ -238,13 +238,13 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
                 />
               </div>
               {unlockError && (
-                <div className="text-sm text-destructive text-center font-medium bg-destructive/10 py-2 rounded-sm border-2 border-destructive/30 animate-fadeIn font-mono">
+                <div className="text-sm text-destructive text-center font-medium bg-destructive/10 py-2 rounded-sm border-2 border-destructive/30 animate-fadeIn">
                   {unlockError}
                 </div>
               )}
             </CardContent>
             <CardFooter>
-              <Button type="submit" disabled={isUnlocking || !password} className="w-full h-12 text-md font-bold font-mono uppercase bg-amber-600 hover:bg-amber-500 border-2 border-amber-800 text-slate-950 active:translate-y-[2px] rounded-sm transition-all shadow-md">
+              <Button type="submit" disabled={isUnlocking || !password} className="w-full h-12 text-md font-semibold bg-amber-600 hover:bg-amber-500 border-2 border-amber-800 text-slate-950 active:translate-y-[2px] rounded-sm transition-all shadow-md">
                 {isUnlocking ? "Verifying..." : "Unlock Form"}
                 {!isUnlocking && <ArrowRightIcon className="size-4 ml-2" />}
               </Button>
@@ -262,11 +262,11 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
         <div className="h-1.5 w-full bg-[#84cc16] absolute top-0 left-0" />
         
         <CardHeader className="space-y-1.5 border-b-2 border-slate-950 pb-6">
-          <CardTitle className="text-2xl font-black font-pixel tracking-wide text-white">
+          <CardTitle className="text-2xl font-bold text-white">
             {form.title}
           </CardTitle>
           {form.description && (
-            <CardDescription className="text-sm text-slate-400 leading-relaxed font-mono">
+            <CardDescription className="text-sm text-slate-400 leading-relaxed">
               {form.description}
             </CardDescription>
           )}
@@ -496,7 +496,7 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
             ) : (
               <div className="flex flex-col items-center justify-center py-10 text-center border-2 border-dashed border-[#365314]/50 rounded-sm bg-[#18181b]/55 p-6">
                 <HelpCircleIcon className="size-10 text-slate-500 mb-3" />
-                <h3 className="text-base font-bold font-pixel text-slate-350 mb-1">Empty Form</h3>
+                <h3 className="text-base font-bold text-slate-350 mb-1">Empty Form</h3>
                 <p className="text-xs text-slate-450 max-w-xs leading-relaxed font-mono">
                   This form does not have any fields configured yet. Please check back later.
                 </p>
@@ -504,7 +504,7 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
             )}
 
             {submitError && (
-              <div className="p-3.5 rounded-sm border-2 border-destructive/30 bg-destructive/10 text-destructive text-sm flex items-start gap-2.5 animate-fadeIn font-mono">
+              <div className="p-3.5 rounded-sm border-2 border-destructive/30 bg-destructive/10 text-destructive text-sm flex items-start gap-2.5 animate-fadeIn">
                 <AlertCircleIcon className="size-5 shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <span className="font-bold text-destructive">Submission Error:</span> {submitError}
@@ -521,7 +521,7 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="font-mono text-xs uppercase tracking-wider px-6"
+                className="text-xs px-6"
               >
                 {isSubmitting ? "Submitting..." : "Submit"}
               </Button>

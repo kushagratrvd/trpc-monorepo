@@ -1,6 +1,7 @@
 import { asc, desc, db, eq, sql, and } from '@repo/database'
 import { formFieldsTable, formsTable } from '@repo/database/schema'
-import { createFormInput, listFormsByUserIdInput, ListFormsByUserIdInputType, type CreateFormInputType, getFormByIdInput, type GetFormByIdInputType, updateFormVisibilityInput, type UpdateFormVisibilityInputType, updateFormSettingsInput, type UpdateFormSettingsInputType, cloneFormInput, type CloneFormInputType } from './model'
+import { createFormInput, listFormsByUserIdInput, ListFormsByUserIdInputType, type CreateFormInputType, getFormByIdInput, type GetFormByIdInputType, updateFormVisibilityInput, type UpdateFormVisibilityInputType, updateFormSettingsInput, type UpdateFormSettingsInputType, updateFormInput, type UpdateFormInputType, getDashboardStatsInput, type GetDashboardStatsInputType, cloneFormInput, type CloneFormInputType } from './model'
+import { formSubmissionTable } from '@repo/database/schema'
 import { ApiError } from "../errors"
 
 class FormService {
@@ -116,6 +117,66 @@ class FormService {
             .where(eq(formsTable.id, formId))
             
         return { success: true }
+    }
+
+    public async updateForm(payload: UpdateFormInputType) {
+        const { formId, title, description } = await updateFormInput.parseAsync(payload)
+
+        const updates: Record<string, any> = {}
+        if (title !== undefined) updates.title = title
+        if (description !== undefined) updates.description = description
+
+        if (Object.keys(updates).length === 0) {
+            return { success: true }
+        }
+
+        await db.update(formsTable)
+            .set(updates)
+            .where(eq(formsTable.id, formId))
+
+        return { success: true }
+    }
+
+    public async getDashboardStats(payload: GetDashboardStatsInputType) {
+        const { userId } = await getDashboardStatsInput.parseAsync(payload)
+
+        const [formsCount] = await db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(formsTable)
+            .where(eq(formsTable.createdBy, userId))
+        const totalForms = formsCount?.count ?? 0
+
+        const [publicCount] = await db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(formsTable)
+            .where(and(eq(formsTable.createdBy, userId), eq(formsTable.visibility, 'PUBLIC')))
+        const activePublicForms = publicCount?.count ?? 0
+
+        const [subsCount] = await db.execute(sql`
+            SELECT COUNT(*)::int AS count
+            FROM form_submissions fs
+            WHERE fs.form_id IN (
+                SELECT id FROM forms WHERE created_by = ${userId}::uuid
+            )
+        `)
+        const totalSubmissions = (subsCount as any)?.count ?? 0
+
+        const recentForms = await db.select({
+            id: formsTable.id,
+            title: formsTable.title,
+            visibility: formsTable.visibility,
+            createdAt: formsTable.createdAt,
+        }).from(formsTable)
+            .where(eq(formsTable.createdBy, userId))
+            .orderBy(desc(formsTable.createdAt))
+            .limit(5)
+
+        return {
+            totalForms,
+            totalSubmissions,
+            activePublicForms,
+            recentForms,
+        }
     }
 
     public async cloneForm(payload: CloneFormInputType) {

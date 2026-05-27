@@ -134,10 +134,9 @@ export default function AnalyticsPage({ params }: AnalyticsPageProps) {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-6 max-w-7xl mx-auto space-y-8">
-      {/* HUD Header Bar */}
       <header className="flex flex-col sm:flex-row justify-between items-center bg-[#18181b] border-2 border-[#365314] rounded-sm p-4 mb-8 shadow-2xl gap-4">
         <div className="flex items-center gap-4">
-          <Button asChild size="sm" variant="ghost" className="hover:bg-slate-800 text-slate-400 hover:text-white transition-all font-mono text-xs uppercase tracking-wider">
+          <Button asChild size="sm" variant="ghost" className="hover:bg-slate-800 text-slate-400 hover:text-white transition-all">
             <Link href={`/dashboard/forms/${formId}`}>
               <ArrowLeftIcon className="size-4 mr-1.5" />
               Back to Builder
@@ -156,7 +155,7 @@ export default function AnalyticsPage({ params }: AnalyticsPageProps) {
               />
             </div>
             <div>
-              <h1 className="text-xl font-black font-pixel tracking-wide text-white leading-tight">Formz Core Console</h1>
+              <h1 className="text-xl font-bold text-white leading-tight">Formz Core Console</h1>
               <p className="text-xs text-slate-400 font-mono">tRPC Ecosystem // Analytics Node</p>
             </div>
           </div>
@@ -166,7 +165,7 @@ export default function AnalyticsPage({ params }: AnalyticsPageProps) {
           {hasData && (
             <button 
               onClick={exportToCSV}
-              className="flex items-center gap-2 rounded-sm border-2 border-[#365314] bg-[#18181b] px-3.5 py-1.5 text-xs font-bold font-mono uppercase tracking-wider text-slate-200 hover:bg-slate-800 transition-all cursor-pointer shadow-md active:translate-y-[2px]"
+              className="flex items-center gap-2 rounded-sm border-2 border-[#365314] bg-[#18181b] px-3.5 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-800 transition-all cursor-pointer shadow-md active:translate-y-[2px]"
             >
               <div className="relative w-5 h-5 shrink-0">
                 <Image 
@@ -177,7 +176,7 @@ export default function AnalyticsPage({ params }: AnalyticsPageProps) {
                   style={{ imageRendering: 'pixelated' }}
                 />
               </div>
-              <span className="text-xs font-bold font-mono uppercase tracking-wider">Export to CSV</span>
+              <span className="text-xs font-semibold">Export to CSV</span>
             </button>
           )}
         </div>
@@ -200,7 +199,7 @@ export default function AnalyticsPage({ params }: AnalyticsPageProps) {
             <div className="p-4 rounded-sm bg-slate-950 border border-slate-800 text-slate-500 mb-5 animate-pulse">
               <InboxIcon className="size-12" />
             </div>
-            <h3 className="text-xl font-bold font-pixel text-slate-200 mb-2">No Responses Captured Yet</h3>
+            <h3 className="text-xl font-bold text-slate-200 mb-2">No Responses Captured Yet</h3>
             <p className="text-sm text-slate-400 max-w-sm mb-6 leading-relaxed">
               We need at least one form response before we can generate aggregations and charts. Share your public link to gather submissions!
             </p>
@@ -293,7 +292,7 @@ export default function AnalyticsPage({ params }: AnalyticsPageProps) {
                     <CardDescription className="text-xs text-slate-400 font-mono">Daily chronological submission volume overview.</CardDescription>
                   </div>
                 </div>
-                <span className="bg-emerald-500/10 text-emerald-400 text-xs px-2.5 py-1 rounded-sm font-bold font-mono uppercase border border-emerald-500/20 flex items-center gap-1.5 shadow-glow-emerald">
+                <span className="bg-emerald-500/10 text-emerald-400 text-xs px-2.5 py-1 rounded-sm font-semibold border border-emerald-500/20 flex items-center gap-1.5 shadow-glow-emerald">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Active Pipeline
                 </span>
               </div>
@@ -342,7 +341,7 @@ export default function AnalyticsPage({ params }: AnalyticsPageProps) {
 
           {/* Field Analysis Cards Section */}
           <div className="space-y-6">
-            <h2 className="text-xl font-black font-pixel tracking-wide text-slate-300 flex items-center gap-2">
+            <h2 className="text-xl font-bold font-pixel tracking-wide text-slate-300 flex items-center gap-2">
               <BarChart3Icon className="size-5 text-[#84cc16]" />
               Field-by-Field Breakdown
             </h2>
@@ -364,7 +363,7 @@ export default function AnalyticsPage({ params }: AnalyticsPageProps) {
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-bold text-white text-md leading-tight">{field.label}</span>
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0.2 bg-slate-950 text-slate-350 border-slate-805 font-mono rounded-sm">
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0.2 bg-slate-950 text-slate-350 border-slate-805 rounded-sm">
                               {field.type}
                             </Badge>
                           </div>

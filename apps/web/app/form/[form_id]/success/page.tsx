@@ -40,7 +40,7 @@ export default function SuccessPage({ params }: SuccessPageProps) {
           <div className="p-4 rounded-sm bg-emerald-500/15 text-emerald-400 mb-6 shadow-[0_0_15px_rgba(16,185,129,0.2)] animate-pulse border-2 border-emerald-500/30">
             <CheckCircle2Icon className="size-14" />
           </div>
-          <h2 className="text-2xl font-black font-pixel tracking-wide mb-2 text-white">Response Submitted!</h2>
+          <h2 className="text-2xl font-bold mb-2 text-white">Response Submitted!</h2>
           
           {submissionInfo?.formTitle ? (
             <p className="text-sm text-[#84cc16] font-bold font-mono uppercase tracking-wider mb-3">
@@ -89,7 +89,7 @@ export default function SuccessPage({ params }: SuccessPageProps) {
               sessionStorage.removeItem(`formz_submission_${formId}`)
               router.push(`/form/${formId}`)
             }}
-            className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider"
+            className="flex items-center gap-2 text-xs"
           >
             <ArrowLeftIcon className="size-4" />
             Fill out another response

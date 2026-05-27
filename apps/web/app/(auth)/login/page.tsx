@@ -7,7 +7,7 @@ export default function Page() {
     <div 
       className="flex min-h-svh w-full items-center justify-center p-6 md:p-10 bg-cover bg-center relative"
       style={{
-        backgroundImage: "linear-gradient(to bottom, rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.85)), url('/assets/minecraft/backgrounds/Lobby.png')",
+        backgroundImage: "url('/assets/minecraft/backgrounds/Lobby.png')",
       }}
     >
       <div className="absolute top-6 left-6">

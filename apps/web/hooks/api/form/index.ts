@@ -312,4 +312,43 @@ export const useCloneForm = () => {
         isError,
         status,
     }
-}
+}
+
+export const useUpdateForm = (formId: string) => {
+    const utils = trpc.useUtils()
+
+    const {
+        mutateAsync: updateFormAsync,
+        error,
+        isError,
+        status,
+    } = trpc.form.updateForm.useMutation({
+        onSuccess: async () => {
+            await utils.form.getFormForEditor.invalidate({ formId })
+            await utils.form.listForms.invalidate()
+            await utils.form.getDashboardStats.invalidate()
+        }
+    })
+
+    return {
+        updateFormAsync,
+        error,
+        isError,
+        status,
+    }
+}
+
+export const useGetDashboardStats = () => {
+    const { data: stats, error, isFetched, isFetching, isLoading, status } =
+        trpc.form.getDashboardStats.useQuery()
+
+    return {
+        stats,
+        error,
+        isFetched,
+        isFetching,
+        isLoading,
+        status,
+    }
+}
+

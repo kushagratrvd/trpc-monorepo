@@ -195,3 +195,24 @@ export const cloneFormOutputModel = z.object({
     id: z.string().uuid().describe('UUID of the newly created clone'),
 })
 
+export const updateFormInputModel = z.object({
+    formId: z.string().uuid().describe('UUID of the form'),
+    title: z.string().max(55).optional().describe('New title of the form'),
+    description: z.string().max(300).nullable().optional().describe('New description of the form'),
+})
+
+export const updateFormOutputModel = z.object({
+    success: z.boolean(),
+})
+
+export const getDashboardStatsOutputModel = z.object({
+    totalForms: z.number().describe('Total number of forms created by user'),
+    totalSubmissions: z.number().describe('Total submissions across all forms'),
+    activePublicForms: z.number().describe('Number of PUBLIC forms'),
+    recentForms: z.array(z.object({
+        id: z.string().uuid(),
+        title: z.string(),
+        visibility: z.enum(['PUBLIC', 'UNLISTED', 'UNPUBLISHED']),
+        createdAt: z.date().nullable(),
+    })).describe('Last 5 forms'),
+})

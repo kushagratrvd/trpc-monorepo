@@ -16,6 +16,8 @@ import {
   TableRow,
 } from "~/components/ui/table"
 import { ArrowLeftIcon, CalendarIcon, InboxIcon, DownloadIcon, LayersIcon } from "lucide-react"
+import { SidebarTrigger } from "~/components/ui/sidebar"
+import { Separator } from "~/components/ui/separator"
 
 type SubmissionsPageProps = {
   params: Promise<{
@@ -83,7 +85,9 @@ export default function SubmissionsPage({ params }: SubmissionsPageProps) {
       {/* Back navigation & Export action header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-[#18181b] border-2 border-[#365314] p-4 rounded-sm shadow-md">
         <div className="flex items-center gap-4">
-          <Button asChild size="sm" variant="ghost" className="hover:bg-slate-800 text-slate-400 hover:text-white transition-all font-mono text-xs uppercase tracking-wider">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="data-[orientation=vertical]:h-4" />
+          <Button asChild size="sm" variant="ghost" className="hover:bg-slate-800 text-slate-400 hover:text-white transition-all">
             <Link href={`/dashboard/forms/${formId}`}>
               <ArrowLeftIcon className="size-4 mr-1.5" />
               Back to Builder
@@ -99,7 +103,7 @@ export default function SubmissionsPage({ params }: SubmissionsPageProps) {
           <Button
             size="sm"
             onClick={exportToCSV}
-            className="font-mono text-xs uppercase tracking-wider"
+            className="text-xs"
           >
             <DownloadIcon className="size-3.5 mr-1" />
             Export to CSV
@@ -110,11 +114,11 @@ export default function SubmissionsPage({ params }: SubmissionsPageProps) {
       {/* Main card header */}
       <div className="space-y-2 bg-slate-900/50 border border-slate-800/80 p-5 rounded-sm">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-black font-pixel tracking-wide text-white">
+          <h1 className="text-2xl font-bold text-white">
             {formLoading ? <Skeleton className="h-8 w-64" /> : `Submissions for ${form?.title}`}
           </h1>
           {!isLoading && hasSubmissions && (
-            <Badge variant="secondary" className="px-2.5 py-0.5 text-xs font-bold font-mono uppercase bg-[#84cc16]/10 text-[#84cc16] border border-[#365314]/30 rounded-sm">
+            <Badge variant="secondary" className="px-2.5 py-0.5 text-xs font-semibold bg-[#84cc16]/10 text-[#84cc16] border border-[#365314]/30 rounded-sm">
               {submissions.length} Total
             </Badge>
           )}
@@ -152,7 +156,7 @@ export default function SubmissionsPage({ params }: SubmissionsPageProps) {
               <div className="p-4 rounded-sm bg-slate-950 border border-slate-800 text-slate-500 mb-4">
                 <LayersIcon className="size-10" />
               </div>
-              <h3 className="text-lg font-bold font-pixel text-slate-200 mb-2">No Fields Available</h3>
+              <h3 className="text-lg font-bold text-slate-200 mb-2">No Fields Available</h3>
               <p className="text-sm text-slate-400 max-w-sm mb-6 leading-relaxed">
                 You must add fields to your form in the builder before you can view submissions.
               </p>
@@ -166,7 +170,7 @@ export default function SubmissionsPage({ params }: SubmissionsPageProps) {
               <div className="p-4 rounded-sm bg-slate-950 border border-slate-800 text-slate-500 mb-4 animate-pulse">
                 <InboxIcon className="size-12" />
               </div>
-              <h3 className="text-lg font-bold font-pixel text-slate-200 mb-2">No Submissions Yet</h3>
+              <h3 className="text-lg font-bold text-slate-200 mb-2">No Submissions Yet</h3>
               <p className="text-sm text-slate-400 max-w-xs mb-6 leading-relaxed">
                 This form has not received any responses yet. Share your public link to start collecting submissions!
               </p>

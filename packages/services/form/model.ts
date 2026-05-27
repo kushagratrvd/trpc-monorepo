@@ -35,6 +35,20 @@ export const updateFormSettingsInput = z.object({
 
 export type UpdateFormSettingsInputType = z.infer<typeof updateFormSettingsInput>
 
+export const updateFormInput = z.object({
+    formId: z.string().uuid().describe('UUID of the form'),
+    title: z.string().max(55).optional().describe('New title of the form'),
+    description: z.string().max(300).nullable().optional().describe('New description of the form'),
+})
+
+export type UpdateFormInputType = z.infer<typeof updateFormInput>
+
+export const getDashboardStatsInput = z.object({
+    userId: z.string().uuid().describe('UUID of the user'),
+})
+
+export type GetDashboardStatsInputType = z.infer<typeof getDashboardStatsInput>
+
 export const cloneFormInput = z.object({
     formId: z.string().uuid().describe('UUID of the form to clone'),
     userId: z.string().uuid().describe('UUID of the requesting user (for ownership validation)'),

@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useState } from "react"
+import { use, useState, useEffect } from "react"
 import Link from "next/link"
 import { useForm, type SubmitHandler } from "react-hook-form"
 import {
@@ -11,6 +11,7 @@ import {
     useGetFormForEditor,
     useUpdateFormVisibility,
     useUpdateFormSettings,
+    useUpdateForm,
 } from "~/hooks/api/form"
 import { Button } from "~/components/ui/button"
 import {
@@ -33,6 +34,7 @@ import {
 import { Switch } from "~/components/ui/switch"
 import { Badge } from "~/components/ui/badge"
 import { Skeleton } from "~/components/ui/skeleton"
+import { Separator } from "~/components/ui/separator"
 import {
     ArrowLeftIcon,
     PlusIcon,
@@ -45,8 +47,16 @@ import {
     AlertTriangleIcon,
     CheckIcon,
     LockIcon,
+    PanelRightOpenIcon,
+    PanelRightCloseIcon,
+    SaveIcon,
+    PaletteIcon,
+    SettingsIcon,
+    LayersIcon,
+    XIcon,
 } from "lucide-react"
 import { QRCodeCanvas } from "qrcode.react"
+import { toast } from "sonner"
 
 const FIELD_TYPES = ["TEXT", "LONG_TEXT", "NUMBER", "EMAIL", "YES_NO", "PASSWORD", "SINGLE_SELECT", "MULTI_SELECT"] as const
 type FieldType = (typeof FIELD_TYPES)[number]
@@ -80,6 +90,15 @@ type EditFieldValues = {
     options: string
 }
 
+const THEMES = [
+    { id: "none", label: "No Theme", preview: "bg-[#18181b]", bgImage: null },
+    { id: "overworld", label: "Overworld", preview: "bg-gradient-to-b from-sky-400 to-green-500", bgImage: "linear-gradient(180deg, #38bdf8 0%, #22c55e 100%)" },
+    { id: "nether", label: "Nether", preview: "bg-gradient-to-b from-red-900 to-orange-600", bgImage: "linear-gradient(180deg, #7f1d1d 0%, #ea580c 100%)" },
+    { id: "end", label: "The End", preview: "bg-gradient-to-b from-purple-900 to-indigo-950", bgImage: "linear-gradient(180deg, #581c87 0%, #1e1b4b 100%)" },
+    { id: "ocean", label: "Deep Ocean", preview: "bg-gradient-to-b from-blue-900 to-cyan-800", bgImage: "linear-gradient(180deg, #1e3a5f 0%, #155e75 100%)" },
+    { id: "mesa", label: "Mesa", preview: "bg-gradient-to-b from-orange-800 to-yellow-700", bgImage: "linear-gradient(180deg, #9a3412 0%, #a16207 100%)" },
+] as const
+
 export default function FormBuilderPage({ params }: { params: Promise<{ id: string }>; }) {
     const { id: formId } = use(params);
 
@@ -90,8 +109,42 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
     const { deleteFieldAsync } = useDeleteField(formId)
     const { updateFormVisibilityAsync, status: visibilityUpdateStatus } = useUpdateFormVisibility(formId)
     const { updateFormSettingsAsync, status: settingsUpdateStatus } = useUpdateFormSettings(formId)
+    const { updateFormAsync, status: updateFormStatus } = useUpdateForm(formId)
 
     const isLoading = isFormLoading || isFieldsLoading
+
+    const [drawerOpen, setDrawerOpen] = useState(true)
+    const [drawerTab, setDrawerTab] = useState<"edit" | "fields" | "theme">("edit")
+
+    const [editTitle, setEditTitle] = useState("")
+    const [editDescription, setEditDescription] = useState("")
+    const [formDirty, setFormDirty] = useState(false)
+
+    const [selectedTheme, setSelectedTheme] = useState("none")
+
+    useEffect(() => {
+        if (formData) {
+            setEditTitle(formData.title)
+            setEditDescription(formData.description || "")
+        }
+    }, [formData])
+
+    useEffect(() => {
+        if (formData) {
+            const titleChanged = editTitle !== formData.title
+            const descChanged = editDescription !== (formData.description || "")
+            setFormDirty(titleChanged || descChanged)
+        }
+    }, [editTitle, editDescription, formData])
+
+    const handleSaveForm = async () => {
+        await updateFormAsync({
+            formId,
+            title: editTitle,
+            description: editDescription || null,
+        })
+        toast.success("Form saved successfully")
+    }
 
     const [settingsOpen, setSettingsOpen] = useState(false)
     const [passwordInput, setPasswordInput] = useState("")
@@ -102,10 +155,11 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
     }
 
     const openSettings = () => {
-        setPasswordInput("") // Don't show existing password for security, just let them overwrite or clear
+        setPasswordInput("")
         setSettingsOpen(true)
     }
 
+    // Share dialog
     const [shareOpen, setShareOpen] = useState(false)
     const [hasCopied, setHasCopied] = useState(false)
 
@@ -119,6 +173,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
         })
     }
 
+    // Create field dialog
     const [createOpen, setCreateOpen] = useState(false)
     const createForm = useForm<CreateFieldValues>({
         defaultValues: {
@@ -147,6 +202,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
         setCreateOpen(false)
     }
 
+    // Edit field dialog
     const [editOpen, setEditOpen] = useState(false)
     const [editingFieldId, setEditingFieldId] = useState<string | null>(null)
     const editForm = useForm<EditFieldValues>({
@@ -199,34 +255,33 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
 
     const isCreating = createStatus === "pending"
     const isUpdating = updateStatus === "pending"
+    const isSaving = updateFormStatus === "pending"
+
+    const currentTheme = THEMES.find(t => t.id === selectedTheme) ?? THEMES[0]
 
     return (
-        <div className="p-6">
-            {/* Header */}
-            <div className="flex items-center gap-4 mb-6">
-                <Button asChild size="sm" variant="ghost">
+        <div className="flex flex-1 flex-col h-full">
+            {/* Inline header */}
+            <header className="flex h-14 shrink-0 items-center gap-2 border-b border-[#365314]/40 px-4 lg:px-6">
+                <Button asChild size="md" variant="ghost">
                     <Link href="/dashboard/forms">
                         <ArrowLeftIcon className="size-4 mr-1" />
                         Back
                     </Link>
                 </Button>
-                <h1 className="text-2xl font-black font-pixel tracking-wide text-white">Form Builder</h1>
-            </div>
+                <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-4" />
+                <h1 className="text-base font-semibold text-white truncate">
+                    {isFormLoading ? <Skeleton className="h-5 w-32" /> : formData?.title || "Form Builder"}
+                </h1>
 
-            {/* Toolbar */}
-            <div className="flex items-center justify-between mb-4">
-                <p className="text-sm text-muted-foreground">
-                    {fields?.fields
-                        ? `${fields.fields.length} field${fields.fields.length !== 1 ? "s" : ""}`
-                        : "Loading..."}
-                </p>
-                <div className="flex items-center gap-2">
-                    <Select 
-                        value={formData?.visibility} 
+                <div className="ml-auto flex items-center gap-2">
+                    {/* Visibility */}
+                    <Select
+                        value={formData?.visibility}
                         onValueChange={(val: any) => updateFormVisibilityAsync({ formId, visibility: val })}
                         disabled={visibilityUpdateStatus === 'pending' || isFormLoading}
                     >
-                        <SelectTrigger className="w-[140px] h-9">
+                        <SelectTrigger className="w-[130px] h-8 text-xs">
                             <SelectValue placeholder="Visibility" />
                         </SelectTrigger>
                         <SelectContent>
@@ -235,114 +290,325 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
                             <SelectItem value="UNLISTED">Unlisted</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button asChild size="sm" variant="outline" className="border-neutral-800 text-neutral-350 hover:bg-neutral-800 bg-neutral-900/40">
+
+                    <Button asChild size="lg" variant="outline" className="border-slate-800 text-slate-300 hover:bg-slate-800 h-8 text-sm">
                         <Link href={`/dashboard/forms/${formId}/analytics`}>
-                            <BarChart3Icon className="size-4 mr-1.5 text-[#84cc16]" />
+                            <BarChart3Icon className="size-3.5 mr-1 text-[#84cc16]" />
                             Analytics
                         </Link>
                     </Button>
-                    <Button asChild size="sm" variant="outline" className="border-neutral-800 text-neutral-350 hover:bg-neutral-800">
+                    <Button asChild size="lg" variant="outline" className="border-slate-800 text-slate-300 hover:bg-slate-800 h-8 text-sm">
                         <Link href={`/dashboard/forms/${formId}/submissions`}>
-                            <InboxIcon className="size-4 mr-1.5" />
+                            <InboxIcon className="size-3.5 mr-1" />
                             Submissions
                         </Link>
                     </Button>
-                    <Button asChild size="sm" variant="outline" className="border-neutral-800 text-neutral-350 hover:bg-neutral-800 bg-neutral-900/40 cursor-pointer" onClick={() => setShareOpen(true)}>
-                        <div>
-                            <ShareIcon className="size-4 mr-1.5 text-emerald-400" />
-                            Share
-                        </div>
+                    <Button size="lg" variant="outline" className="border-slate-800 text-slate-300 hover:bg-slate-800 h-8 text-sm cursor-pointer" onClick={() => setShareOpen(true)}>
+                        <ShareIcon className="size-3.5 mr-1 text-emerald-400" />
+                        Share
                     </Button>
-                    <Button asChild size="sm" variant="outline" className="border-neutral-800 text-neutral-350 hover:bg-neutral-800 bg-neutral-900/40 cursor-pointer" onClick={openSettings}>
-                        <div>
-                            <LockIcon className={`size-4 mr-1.5 ${formData?.hasPassword ? 'text-amber-400' : 'text-neutral-400'}`} />
-                            Password
-                        </div>
+                    <Button size="lg" variant="outline" className="border-slate-800 text-slate-300 hover:bg-slate-800 h-8 text-sm cursor-pointer" onClick={openSettings}>
+                        <LockIcon className={`size-3.5 mr-1 ${formData?.hasPassword ? 'text-amber-400' : 'text-slate-400'}`} />
+                        Password
                     </Button>
-                    <Button size="sm" onClick={() => setCreateOpen(true)}>
-                        <PlusIcon className="size-4 mr-1" />
-                        Add Field
+
+                    {/* Drawer toggle */}
+                    <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-4" />
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setDrawerOpen(!drawerOpen)}
+                        className="h-8 w-8 p-0"
+                    >
+                        {drawerOpen ? <PanelRightCloseIcon className="size-4" /> : <PanelRightOpenIcon className="size-4" />}
                     </Button>
                 </div>
-            </div>
+            </header>
 
-            {/* Field list */}
-            <div className="space-y-3">
-                {isLoading ? (
-                    Array.from({ length: 3 }).map((_, i) => (
-                        <div key={i} className="rounded-sm border-2 border-slate-800 p-4 bg-[#18181b]">
-                            <div className="flex items-center gap-3">
-                                <Skeleton className="h-5 w-32" />
-                                <Skeleton className="h-5 w-16" />
+            <div className="flex flex-1 overflow-hidden">
+                {/* Main content — Field list / Preview */}
+                <div className="flex-1 overflow-y-auto p-6 min-w-0">
+                    {/* Toolbar */}
+                    <div className="flex items-center justify-between mb-4">
+                        <p className="text-sm text-muted-foreground">
+                            {fields?.fields
+                                ? `${fields.fields.length} field${fields.fields.length !== 1 ? "s" : ""}`
+                                : "Loading..."}
+                        </p>
+                        <Button size="sm" onClick={() => { setDrawerTab("fields"); setDrawerOpen(true); setCreateOpen(true); }}>
+                            <PlusIcon className="size-4 mr-1" />
+                            Add Field
+                        </Button>
+                    </div>
+
+                    {/* Form Preview with Theme */}
+                    <div
+                        className="rounded-sm border border-slate-800 p-6 min-h-[400px] transition-all"
+                        style={{
+                            background: currentTheme?.bgImage || undefined,
+                            backgroundColor: currentTheme?.bgImage ? undefined : '#18181b',
+                        }}
+                    >
+                        {/* Form header preview */}
+                        <div className="max-w-2xl mx-auto">
+                            <div className="mb-6">
+                                <h2 className="text-xl font-bold text-white mb-1">
+                                    {editTitle || "Untitled Form"}
+                                </h2>
+                                {editDescription && (
+                                    <p className="text-sm text-slate-300/80">{editDescription}</p>
+                                )}
                             </div>
-                            <Skeleton className="mt-2 h-4 w-48" />
+
+                            {/* Field list */}
+                            <div className="space-y-3">
+                                {isLoading ? (
+                                    Array.from({ length: 3 }).map((_, i) => (
+                                        <div key={i} className="rounded-sm border border-white/10 p-4 bg-black/20 backdrop-blur-sm">
+                                            <div className="flex items-center gap-3">
+                                                <Skeleton className="h-5 w-32" />
+                                                <Skeleton className="h-5 w-16" />
+                                            </div>
+                                            <Skeleton className="mt-2 h-4 w-48" />
+                                        </div>
+                                    ))
+                                ) : fields?.fields && fields.fields.length > 0 ? (
+                                    fields.fields.map((field) => (
+                                        <div
+                                            key={field.labelKey}
+                                            className="group rounded-sm border border-white/10 p-4 transition-colors bg-black/20 backdrop-blur-sm hover:bg-black/30 hover:border-[#84cc16]/40"
+                                        >
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="font-bold text-white">
+                                                            {field.label}
+                                                        </span>
+                                                        <Badge variant="secondary" className="rounded-sm text-[10px]">
+                                                            {FIELD_TYPE_LABELS[field.type as FieldType] ?? field.type}
+                                                        </Badge>
+                                                        {field.isRequired && (
+                                                            <Badge variant="outline" className="text-[10px] rounded-sm font-semibold bg-red-500/10 text-red-400 border-red-500/20">
+                                                                Required
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    {field.description && (
+                                                        <p className="text-sm text-slate-300/70 truncate">
+                                                            {field.description}
+                                                        </p>
+                                                    )}
+                                                    <p className="text-xs text-slate-400/50 mt-1 font-mono">
+                                                        Key: <code className="rounded-sm bg-black/30 px-1.5 py-0.5 border border-white/10">{field.labelKey}</code>
+                                                    </p>
+                                                </div>
+
+                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        className="text-white/80 hover:text-white"
+                                                        onClick={() => openEditDialog(field as {
+                                                            id: string
+                                                            label: string
+                                                            type: FieldType
+                                                            description?: string | null
+                                                            placeholder?: string | null
+                                                            isRequired: boolean
+                                                            options?: string[] | null
+                                                        })}
+                                                    >
+                                                        <PencilIcon className="size-4" />
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        className="text-destructive hover:text-destructive"
+                                                        onClick={() => deleteFieldAsync({ fieldId: field.id })}
+                                                    >
+                                                        <Trash2Icon className="size-4" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="rounded-sm border border-dashed border-white/20 p-8 text-center bg-black/20 backdrop-blur-sm">
+                                        <p className="text-lg font-bold text-white/80 mb-1">No fields yet</p>
+                                        <p className="text-sm text-slate-400">
+                                            Click &ldquo;Add Field&rdquo; to start building your form.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    ))
-                ) : fields?.fields && fields.fields.length > 0 ? (
-                    fields.fields.map((field) => (
-                        <div
-                            key={field.labelKey}
-                            className="group rounded-sm border-2 border-slate-800 p-4 transition-colors bg-[#18181b] hover:bg-slate-800/40 hover:border-[#365314]"
-                        >
-                            <div className="flex items-start justify-between gap-4">
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className="font-bold text-slate-100">
-                                            {field.label}
-                                        </span>
-                                        <Badge variant="secondary" className="rounded-sm font-mono text-[10px] uppercase">
-                                            {FIELD_TYPE_LABELS[field.type as FieldType] ?? field.type}
-                                        </Badge>
-                                        {field.isRequired && (
-                                            <Badge variant="outline" className="text-[10px] rounded-sm font-bold font-mono uppercase bg-red-500/10 text-red-400 border-red-500/20">
-                                                Required
-                                            </Badge>
+                    </div>
+                </div>
+
+                {/* Right Drawer */}
+                {drawerOpen && (
+                    <div className="w-80 shrink-0 border-l border-[#365314]/40 bg-[#18181b] overflow-y-auto">
+                        {/* Drawer tabs */}
+                        <div className="flex items-center border-b border-slate-800 px-2">
+                            <button
+                                className={`flex items-center gap-1.5 px-3 py-3 text-xs font-medium transition-colors border-b-2 ${
+                                    drawerTab === "edit"
+                                        ? "border-[#84cc16] text-[#84cc16]"
+                                        : "border-transparent text-slate-400 hover:text-slate-200"
+                                }`}
+                                onClick={() => setDrawerTab("edit")}
+                            >
+                                <SettingsIcon className="size-4.5" />
+                                Edit
+                            </button>
+                            <button
+                                className={`flex items-center gap-1.5 px-3 py-3 text-xs font-medium transition-colors border-b-2 ${
+                                    drawerTab === "fields"
+                                        ? "border-[#84cc16] text-[#84cc16]"
+                                        : "border-transparent text-slate-400 hover:text-slate-200"
+                                }`}
+                                onClick={() => setDrawerTab("fields")}
+                            >
+                                <LayersIcon className="size-4.5" />
+                                Fields
+                            </button>
+                            <button
+                                className={`flex items-center gap-1.5 px-3 py-3 text-xs font-medium transition-colors border-b-2 ${
+                                    drawerTab === "theme"
+                                        ? "border-[#84cc16] text-[#84cc16]"
+                                        : "border-transparent text-slate-400 hover:text-slate-200"
+                                }`}
+                                onClick={() => setDrawerTab("theme")}
+                            >
+                                <PaletteIcon className="size-4.5" />
+                                Theme
+                            </button>
+                        </div>
+
+                        <div className="p-4">
+                            {/* Edit Tab — Form title/description */}
+                            {drawerTab === "edit" && (
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="text-xs font-medium text-slate-400 mb-1.5 block">Title</label>
+                                        <Input
+                                            value={editTitle}
+                                            onChange={(e) => setEditTitle(e.target.value)}
+                                            placeholder="Form title"
+                                            maxLength={55}
+                                            className="text-sm"
+                                        />
+                                        <p className="text-[10px] text-slate-500 mt-1 text-right">{editTitle.length}/55</p>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-medium text-slate-400 mb-1.5 block">Description</label>
+                                        <Textarea
+                                            value={editDescription}
+                                            onChange={(e) => setEditDescription(e.target.value)}
+                                            placeholder="Form description (optional)"
+                                            rows={3}
+                                            maxLength={300}
+                                            className="text-sm"
+                                        />
+                                        <p className="text-[10px] text-slate-500 mt-1 text-right">{editDescription.length}/300</p>
+                                    </div>
+                                    <Button
+                                        onClick={handleSaveForm}
+                                        disabled={!formDirty || isSaving}
+                                        className="w-full"
+                                        size="sm"
+                                    >
+                                        <SaveIcon className="size-3.5 mr-1.5" />
+                                        {isSaving ? "Saving..." : formDirty ? "Save Changes" : "No Changes"}
+                                    </Button>
+                                </div>
+                            )}
+
+                            {/* Fields Tab */}
+                            {drawerTab === "fields" && (
+                                <div className="space-y-3">
+                                    <Button size="sm" onClick={() => setCreateOpen(true)} className="w-full">
+                                        <PlusIcon className="size-4 mr-1" />
+                                        Add Field
+                                    </Button>
+                                    <div className="space-y-2">
+                                        {isLoading ? (
+                                            Array.from({ length: 3 }).map((_, i) => (
+                                                <div key={i} className="rounded-sm border border-slate-800 p-3">
+                                                    <Skeleton className="h-4 w-24 mb-1" />
+                                                    <Skeleton className="h-3 w-16" />
+                                                </div>
+                                            ))
+                                        ) : fields?.fields && fields.fields.length > 0 ? (
+                                            fields.fields.map((field) => (
+                                                <div
+                                                    key={field.labelKey}
+                                                    className="rounded-sm border border-slate-800 p-3 hover:border-[#365314] transition-colors group"
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-medium text-slate-200 truncate">{field.label}</p>
+                                                            <p className="text-[10px] text-slate-500">
+                                                                {FIELD_TYPE_LABELS[field.type as FieldType] ?? field.type}
+                                                                {field.isRequired && " • Required"}
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                className="h-7 w-7 p-0"
+                                                                onClick={() => openEditDialog(field as any)}
+                                                            >
+                                                                <PencilIcon className="size-3" />
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                className="h-7 w-7 p-0 text-destructive"
+                                                                onClick={() => deleteFieldAsync({ fieldId: field.id })}
+                                                            >
+                                                                <Trash2Icon className="size-3" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p className="text-xs text-slate-500 text-center py-4">No fields yet</p>
                                         )}
                                     </div>
-                                    {field.description && (
-                                        <p className="text-sm text-slate-400 truncate">
-                                            {field.description}
-                                        </p>
-                                    )}
-                                    <p className="text-xs text-slate-500 mt-1 font-mono">
-                                        Key: <code className="rounded-sm bg-slate-950 px-1.5 py-0.5 border border-slate-800">{field.labelKey}</code>
+                                </div>
+                            )}
+
+                            {/* Theme Tab — Frontend-only preview */}
+                            {drawerTab === "theme" && (
+                                <div className="space-y-3">
+                                    <p className="text-xs text-slate-400">
+                                        Choose a theme for your form&apos;s public page.
+                                    </p>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {THEMES.map((theme) => (
+                                            <button
+                                                key={theme.id}
+                                                onClick={() => setSelectedTheme(theme.id)}
+                                                className={`rounded-sm border-2 p-3 text-center transition-all ${
+                                                    selectedTheme === theme.id
+                                                        ? "border-[#84cc16] ring-1 ring-[#84cc16]/30"
+                                                        : "border-slate-700 hover:border-slate-600"
+                                                }`}
+                                            >
+                                                <div className={`w-full h-10 rounded-sm mb-2 ${theme.preview}`} />
+                                                <p className="text-[10px] font-medium text-slate-300">{theme.label}</p>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <p className="text-[10px] text-slate-500 text-center mt-2">
+                                        Theme saving coming soon — preview only for now
                                     </p>
                                 </div>
-
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => openEditDialog(field as {
-                                            id: string
-                                            label: string
-                                            type: FieldType
-                                            description?: string | null
-                                            placeholder?: string | null
-                                            isRequired: boolean
-                                            options?: string[] | null
-                                        })}
-                                    >
-                                        <PencilIcon className="size-4" />
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="text-destructive hover:text-destructive"
-                                        onClick={() => deleteFieldAsync({ fieldId: field.id })}
-                                    >
-                                        <Trash2Icon className="size-4" />
-                                    </Button>
-                                </div>
-                            </div>
+                            )}
                         </div>
-                    ))
-                ) : (
-                    <div className="rounded-sm border-2 border-dashed border-[#365314]/50 p-8 text-center text-slate-400 bg-[#18181b]/50">
-                        <p className="text-lg font-bold font-pixel text-slate-200 mb-1">No fields yet</p>
-                        <p className="text-sm">
-                            Click &ldquo;Add Field&rdquo; to start building your form.
-                        </p>
                     </div>
                 )}
             </div>
@@ -580,8 +846,8 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
                             </div>
                         )}
                         <div className="bg-white p-4 rounded-sm shadow-sm border-2 border-[#365314]">
-                            <QRCodeCanvas 
-                                value={absoluteUrl} 
+                            <QRCodeCanvas
+                                value={absoluteUrl}
                                 size={180}
                                 level={"H"}
                                 fgColor={"#000000"}
@@ -591,9 +857,9 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
                         <div className="w-full space-y-2">
                             <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider font-mono">Public Link</p>
                             <div className="flex items-center gap-2">
-                                <Input 
-                                    readOnly 
-                                    value={absoluteUrl} 
+                                <Input
+                                    readOnly
+                                    value={absoluteUrl}
                                     className="bg-neutral-900 font-mono text-xs text-neutral-300"
                                 />
                                 <Button size="sm" onClick={handleCopyLink} className="shrink-0">
@@ -619,14 +885,14 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
                     <div className="py-4 space-y-4">
                         <div className="space-y-2">
                             <FieldLabel>Password Protection</FieldLabel>
-                            <Input 
+                            <Input
                                 type="text"
                                 placeholder={formData?.hasPassword ? "Enter new password to overwrite..." : "Enter a password to lock form..."}
                                 value={passwordInput}
                                 onChange={(e) => setPasswordInput(e.target.value)}
                             />
                             <p className="text-xs text-muted-foreground">
-                                {formData?.hasPassword 
+                                {formData?.hasPassword
                                     ? "This form is currently password protected. Leave blank and save to remove the password."
                                     : "Anyone with the link can view this form. Set a password to lock it."}
                             </p>

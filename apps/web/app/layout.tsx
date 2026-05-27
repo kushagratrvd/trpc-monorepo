@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Pixelify_Sans, JetBrains_Mono } from "next/font/google";
+import { Inter, Pixelify_Sans, JetBrains_Mono, VT323 } from "next/font/google";
 import "./globals.css";
 import { GlobalProviders } from "~/providers/global";
 
@@ -18,6 +18,12 @@ const jetbrains = JetBrains_Mono({
   variable: "--font-jetbrains",
 });
 
+const vt323 = VT323({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-vt323",
+});
+
 export const metadata: Metadata = {
   title: "Formz",
   description: "Dynamic Form Builder",
@@ -30,7 +36,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.variable} ${pixelify.variable} ${jetbrains.variable} font-sans`}>
+      <body className={`${inter.variable} ${pixelify.variable} ${jetbrains.variable} ${vt323.variable} font-sans`}>
         {/* Global Minecraft repeating texture overlay */}
         <div 
           className="fixed inset-0 z-50 opacity-[0.03] bg-repeat pointer-events-none" 

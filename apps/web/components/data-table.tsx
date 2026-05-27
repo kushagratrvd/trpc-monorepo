@@ -493,7 +493,7 @@ export function DataTable({
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => {
                       return (
-                        <TableHead key={header.id} colSpan={header.colSpan} className="font-pixel uppercase tracking-widest text-[11px] text-[#84cc16] bg-[#111827] border-b-2 border-[#365314] h-11 px-4">
+                        <TableHead key={header.id} colSpan={header.colSpan} className="font-semibold text-xs text-[#84cc16] bg-[#111827] border-b-2 border-[#365314] h-11 px-4">
                           {header.isPlaceholder
                             ? null
                             : flexRender(

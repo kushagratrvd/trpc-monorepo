@@ -27,6 +27,9 @@ import {
     getFormAnalyticsOutputModel,
     cloneFormInputModel,
     cloneFormOutputModel,
+    updateFormInputModel,
+    updateFormOutputModel,
+    getDashboardStatsOutputModel,
 } from "./model";
 import { generatePath } from "../../utils/path-generator";
 import { formService, formFieldService, formSubmissionService, userService } from "../../services";
@@ -290,5 +293,33 @@ export const formRouter = router({
         .output(cloneFormOutputModel)
         .mutation(async ({ input, ctx }) => {
             return formService.cloneForm({ formId: input.formId, userId: ctx.user.id })
+        }),
+
+    updateForm: authenticatedProcedure.meta({
+        openapi: {
+            method: 'POST',
+            path: getPath('/updateForm'),
+            tags: TAGS,
+            protect: true,
+        }
+    })
+        .input(updateFormInputModel)
+        .output(updateFormOutputModel)
+        .mutation(async ({ input }) => {
+            return formService.updateForm(input)
+        }),
+
+    getDashboardStats: authenticatedProcedure.meta({
+        openapi: {
+            method: 'GET',
+            path: getPath('/getDashboardStats'),
+            tags: TAGS,
+            protect: true,
+        }
+    })
+        .input(z.undefined())
+        .output(getDashboardStatsOutputModel)
+        .query(async ({ ctx }) => {
+            return formService.getDashboardStats({ userId: ctx.user.id })
         }),
 });
