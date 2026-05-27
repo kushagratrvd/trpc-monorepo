@@ -11,7 +11,7 @@ To make exploring the platform as smooth as possible, the project comes pre-seed
 - **Password:** `demo123`
 
 **API Documentation:**
-- **Scalar Reference:** Navigate to `http://localhost:3001/reference` while the development server is running to view the interactive Scalar API documentation.
+- **Scalar Reference:** Navigate to `http://localhost:3001/docs` while the development server is running to view the interactive Scalar API documentation.
 
 ## Core Features
 
@@ -60,4 +60,4 @@ pnpm run dev
 
 - **Frontend Application:** `http://localhost:3000`
 - **Backend API:** `http://localhost:3001`
-- **Scalar API Docs:** `http://localhost:3001/reference`
+- **Scalar API Docs:** `http://localhost:3001/docs`
