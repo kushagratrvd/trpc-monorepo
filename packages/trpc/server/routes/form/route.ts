@@ -33,6 +33,7 @@ import {
 } from "./model";
 import { generatePath } from "../../utils/path-generator";
 import { formService, formFieldService, formSubmissionService, userService } from "../../services";
+import { AVAILABLE_THEMES } from "@repo/services/form/constants";
 import { z } from "zod";
 import { getAuthenticationCookie } from "../../utils/cookie";
 
@@ -321,5 +322,18 @@ export const formRouter = router({
         .output(getDashboardStatsOutputModel)
         .query(async ({ ctx }) => {
             return formService.getDashboardStats({ userId: ctx.user.id })
+        }),
+
+    getAvailableThemes: publicProcedure.meta({
+        openapi: {
+            method: 'GET',
+            path: getPath('/getAvailableThemes'),
+            tags: TAGS,
+        }
+    })
+        .input(z.undefined())
+        .output(z.array(z.string()))
+        .query(async () => {
+            return [...AVAILABLE_THEMES];
         }),
 });

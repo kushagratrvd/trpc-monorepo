@@ -2,16 +2,43 @@ import * as React from "react"
 
 import { cn } from "~/lib/utils"
 
-function Card({ className, ...props }: React.ComponentProps<"div">) {
+function Card({ className, children, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card"
       className={cn(
-        "flex flex-col gap-6 rounded-sm border-2 border-[#365314] bg-[#18181b] py-6 text-slate-100 shadow-lg shadow-black/40",
+        "relative overflow-hidden rounded-none",
         className
       )}
       {...props}
-    />
+    >
+      {/* dirt texture */}
+      {/*<div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: "url('/assets/minecraft/blocks/dirt.png')",
+          backgroundRepeat: "repeat",
+          backgroundSize: "48px",
+          imageRendering: "pixelated",
+        }}
+      />*/}
+
+      {/* grass top strip */}
+      <div
+        className="absolute top-0 left-0 w-full h-4 pointer-events-none z-[1]"
+        style={{
+          backgroundImage: "url('/assets/minecraft/blocks/grass.png')",
+          backgroundRepeat: "repeat-x",
+          backgroundSize: "60px",
+          imageRendering: "pixelated",
+        }}
+      />
+
+      {/* content */}
+      <div className="relative z-10 flex flex-col gap-4 p-5 pt-5">
+        {children}
+      </div>
+    </div>
   )
 }
 
@@ -20,7 +47,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-header"
       className={cn(
-        "@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6 border-slate-800",
+        "grid auto-rows-min gap-2",
         className
       )}
       {...props}
@@ -65,7 +92,10 @@ function CardContent({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-content"
-      className={cn("px-6 font-sans text-sm", className)}
+      className={cn(
+        "font-sans text-sm",
+        className
+      )}
       {...props}
     />
   )
@@ -75,7 +105,10 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-footer"
-      className={cn("flex items-center px-6 [.border-t]:pt-6 border-slate-800", className)}
+      className={cn(
+        "flex items-center",
+        className
+      )}
       {...props}
     />
   )

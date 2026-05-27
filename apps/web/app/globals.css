@@ -5,7 +5,7 @@
 
 @theme inline {
   --font-sans: var(--font-inter), sans-serif;
-  --font-pixel: var(--font-pixelify), cursive;
+  --font-pixel: var(--font-vt323), monospace;
   --font-mono: var(--font-jetbrains), monospace;
 
   --radius-sm: calc(var(--radius) - 4px);
@@ -146,3 +146,86 @@
     @apply bg-background text-foreground;
   }
 }
+
+.vt323-regular {
+  font-family: var(--font-vt323), "VT323", monospace;
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* ── MINECRAFT UTILITY SYSTEM ── */
+
+/* ── TEXTURES ── */
+.texture-deepslate {
+  background-image: url("/assets/minecraft/blocks/Blackstone.png");
+  background-repeat: repeat;
+  background-size: 128px;
+  image-rendering: pixelated;
+}
+
+.texture-oak {
+  background-image: url("/assets/minecraft/blocks/Acacia_Planks.png");
+  background-repeat: repeat;
+  background-size: 128px;
+  image-rendering: pixelated;
+}
+
+.texture-map {
+  background-image: url("/assets/minecraft/gui/map_background.png");
+  background-size: cover;
+  image-rendering: pixelated;
+}
+
+.texture-checkerboard {
+  background-image: url('/assets/minecraft/gui/map_background_checkerboard.png');
+  background-size: cover;
+  background-position: center;
+  image-rendering: pixelated;
+}
+
+/* ── OVERLAYS ── */
+.minecraft-overlay-dark {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.minecraft-overlay-green {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at top,
+    rgba(132, 204, 22, 0.08),
+    transparent 60%
+  );
+}
+
+.minecraft-texture-subtle-overlay {
+  position: relative;
+}
+.minecraft-texture-subtle-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('/assets/minecraft/blocks/Blackstone.png');
+  background-repeat: repeat;
+  background-size: 128px;
+  image-rendering: pixelated;
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── BORDERS ── */
+.mc-border-map {
+  border: 6px solid transparent;
+  border-image: url('/assets/minecraft/gui/map_background.png') 14 round;
+  image-rendering: pixelated;
+}
+
+.mc-border-checkerboard {
+  border: 6px solid transparent;
+  border-image: url('/assets/minecraft/gui/map_background_checkerboard.png') 14 round;
+  image-rendering: pixelated;
+}
+

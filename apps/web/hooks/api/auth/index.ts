@@ -62,3 +62,32 @@ export const useUser = () => {
     const {data: user, error, isFetched,isFetching, isLoading, status} = trpc.auth.getLoggedInUserInfo.useQuery();
     return { user, error, isFetched,isFetching, isLoading, status };
 }
+
+export const useSignInWithGoogle = () => {
+    const utils = trpc.useUtils();
+
+    const { mutateAsync: signInWithGoogleAsync, 
+        mutate: signInWithGoogle,
+        error,
+        failureCount,
+        isError,
+        isIdle,
+        isSuccess,
+        status,
+    } = trpc.auth.signInWithGoogle.useMutation({
+        onSuccess: async () => {
+            await utils.auth.getLoggedInUserInfo.invalidate();
+        }
+    });
+    
+    return { 
+        signInWithGoogleAsync,
+        signInWithGoogle,
+        error,
+        failureCount,
+        isError,
+        isIdle,
+        isSuccess,
+        status,
+    }
+}

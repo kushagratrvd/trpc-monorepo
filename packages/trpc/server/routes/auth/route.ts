@@ -4,7 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { getAuthenticationMethodOutputSchema } from "@repo/services/user/model";
 import { authenticatedProcedure, publicProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
-import { createUserWithEmailAndPasswordInputModel, createUserWithEmailAndPasswordOutputModel, getLoggedInUserInfoInputModel, getLoggedInUserInfoOutputModel, signInUserWithEmailAndPasswordInputModel, signInUserWithEmailAndPasswordOutputModel } from "./model";
+import { createUserWithEmailAndPasswordInputModel, createUserWithEmailAndPasswordOutputModel, getLoggedInUserInfoInputModel, getLoggedInUserInfoOutputModel, signInUserWithEmailAndPasswordInputModel, signInUserWithEmailAndPasswordOutputModel, signInWithGoogleInputModel, signInWithGoogleOutputModel } from "./model";
 import { getAuthenticationCookie, getRefreshTokenCookie, setAuthenticationCookies, clearAuthenticationCookies } from "../../utils/cookie";
 import { ApiError } from "@repo/services/errors";
 
@@ -48,6 +48,25 @@ export const authRouter = router({
       const { id, accessToken, refreshToken } = await userService.signInUserWithEmailAndPassword({
         email, password
       })
+
+      setAuthenticationCookies(ctx, accessToken, refreshToken);
+
+      return {
+        id
+      }
+    }),
+
+  signInWithGoogle: publicProcedure
+    .meta({openapi: {
+      method: 'POST',
+      path: getPath('/signInWithGoogle'),
+      tags: TAGS
+    }})
+    .input(signInWithGoogleInputModel)
+    .output(signInWithGoogleOutputModel)
+    .mutation(async({ input, ctx }) => {
+      const { code } = input;
+      const { id, accessToken, refreshToken } = await userService.signInWithGoogle(code);
 
       setAuthenticationCookies(ctx, accessToken, refreshToken);
 

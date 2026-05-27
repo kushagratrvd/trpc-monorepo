@@ -42,9 +42,6 @@ export default function RootLayout({
           className="fixed inset-0 z-50 opacity-[0.03] bg-repeat pointer-events-none" 
           style={{ backgroundImage: "url('/assets/minecraft/blocks/Cobbled_Deepslate.png')", imageRendering: "pixelated" }}
         />
-        {/* Subtle Overworld ambient green glows */}
-        <div className="fixed top-0 left-1/3 h-[500px] w-[500px] bg-lime-500/5 blur-3xl pointer-events-none z-40" />
-        <div className="fixed bottom-0 right-1/4 h-[400px] w-[400px] bg-emerald-500/5 blur-3xl pointer-events-none z-40" />
         <GlobalProviders>{children}</GlobalProviders>
       </body>
     </html>

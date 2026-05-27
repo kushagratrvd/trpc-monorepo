@@ -185,6 +185,56 @@ class UserService {
     }
   }
 
+  public async signInWithGoogle(code: string) {
+    try {
+      const { tokens } = await googleOAuth2Client.getToken(code);
+      const ticket = await googleOAuth2Client.verifyIdToken({
+        idToken: tokens.id_token!,
+        audience: env.GOOGLE_OAUTH_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      
+      if (!payload || !payload.email) {
+        throw ApiError.unauthorized("Invalid Google token payload", "INVALID_GOOGLE_TOKEN");
+      }
+
+      const { email, name, picture } = payload;
+      let user = await this.getUserByEmail(email);
+
+      if (!user) {
+        const userInsertResult = await db.insert(usersTable).values({ 
+          email, 
+          fullName: name || email.split("@")[0] || "User", 
+          profileImageUrl: picture || null,
+          password: null,
+          salt: null,
+        }).returning({ id: usersTable.id });
+
+        if (!userInsertResult || userInsertResult.length === 0 || !userInsertResult[0]?.id) {
+          throw ApiError.internal("Failed to register account via Google", "REGISTRATION_FAILED");
+        }
+        user = userInsertResult[0] as any;
+      } else {
+        // User exists, update profile picture if missing
+        if (picture && !user.profileImageUrl) {
+          await db.update(usersTable).set({ profileImageUrl: picture }).where(eq(usersTable.id, user.id));
+        }
+      }
+
+      if (!user) throw ApiError.internal("User not found or created", "GOOGLE_AUTH_FAILED");
+      const userId = user.id;
+      const userTokens = await this.generateUserTokens(userId);
+
+      return {
+        id: userId,
+        ...userTokens
+      };
+    } catch (error) {
+      console.error("Google signIn Error:", error);
+      throw ApiError.unauthorized("Failed to authenticate with Google", "GOOGLE_AUTH_FAILED");
+    }
+  }
+
   public async verifyAndDecodeUserToken(token: string){
     const { id } = await this.verifyUserToken(token);
     return { id };

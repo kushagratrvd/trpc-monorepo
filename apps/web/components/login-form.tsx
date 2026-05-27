@@ -19,6 +19,7 @@ import {
 } from "~/components/ui/field"
 import { Input } from "~/components/ui/input"
 import { useSignIn } from "~/hooks/api/auth"
+import { trpc } from "~/trpc/client"
 
 type LoginFormValues = {
   email: string;
@@ -31,6 +32,15 @@ export function LoginForm({
 }: React.ComponentProps<"div">) {
   const { signInUserWithEmailAndPasswordAsync } = useSignIn();
   const router = useRouter();
+
+  const { data: providers } = trpc.auth.getSupportedAuthenticationProviders.useQuery();
+  const googleProvider = providers?.find(p => p.provider === "GOOGLE_OAUTH");
+
+  const handleGoogleLogin = () => {
+    if (googleProvider?.authUrl) {
+      window.location.href = googleProvider.authUrl;
+    }
+  };
 
   const { register, handleSubmit } = useForm<LoginFormValues>({
     defaultValues: {
@@ -92,7 +102,7 @@ export function LoginForm({
               </Field>
               <Field>
                 <Button type="submit">Login</Button>
-                <Button variant="outline" type="button">
+                <Button variant="outline" type="button" onClick={handleGoogleLogin} disabled={!googleProvider}>
                   Login with Google
                 </Button>
                 <FieldDescription className="text-center">

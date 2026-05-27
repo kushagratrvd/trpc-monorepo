@@ -25,4 +25,5 @@ export const formsTable = pgTable("forms", {
   updatedAt: timestamp("updated_at").$onUpdate(() => new Date()),
   password: varchar("password", { length: 255 }),
   visibility: formVisibilityEnum("visibility").default("UNPUBLISHED").notNull(),
+  theme: varchar("theme", { length: 255 }).default('blank'),
 });

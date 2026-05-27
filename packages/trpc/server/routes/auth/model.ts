@@ -27,3 +27,11 @@ export const getLoggedInUserInfoOutputModel = z.object({
   email: z.email().describe('email of the user'),
   profileImageUrl: z.string().optional().nullable().describe('profile image url of the user'),
 })
+
+export const signInWithGoogleInputModel = z.object({
+  code: z.string().describe('Google OAuth authorization code')
+})
+
+export const signInWithGoogleOutputModel = z.object({
+  id: z.string().describe('id of the user created or logged in')
+})

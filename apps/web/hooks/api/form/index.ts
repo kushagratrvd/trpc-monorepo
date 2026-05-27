@@ -351,4 +351,17 @@ export const useGetDashboardStats = () => {
         status,
     }
 }
-
+
+export const useGetAvailableThemes = () => {
+    const { data: themes, error, isFetched, isFetching, isLoading, status } =
+        trpc.form.getAvailableThemes.useQuery()
+
+    return {
+        themes,
+        error,
+        isFetched,
+        isFetching,
+        isLoading,
+        status,
+    }
+}

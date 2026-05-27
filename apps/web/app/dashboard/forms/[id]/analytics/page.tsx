@@ -322,7 +322,7 @@ export default function AnalyticsPage({ params }: AnalyticsPageProps) {
                         fontSize: "12px",
                         color: "#f5f5f5"
                       }}
-                      labelFormatter={formatTimelineDate}
+                      labelFormatter={(label) => formatTimelineDate(label as string)}
                     />
                     <Line
                       type="monotone"

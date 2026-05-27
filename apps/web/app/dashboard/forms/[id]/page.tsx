@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useState, useEffect } from "react"
+import { use, useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { useForm, type SubmitHandler } from "react-hook-form"
 import {
@@ -12,6 +12,7 @@ import {
     useUpdateFormVisibility,
     useUpdateFormSettings,
     useUpdateForm,
+    useGetAvailableThemes,
 } from "~/hooks/api/form"
 import { Button } from "~/components/ui/button"
 import {
@@ -57,6 +58,7 @@ import {
 } from "lucide-react"
 import { QRCodeCanvas } from "qrcode.react"
 import { toast } from "sonner"
+import { getCombinedThemes } from "~/lib/themes"
 
 const FIELD_TYPES = ["TEXT", "LONG_TEXT", "NUMBER", "EMAIL", "YES_NO", "PASSWORD", "SINGLE_SELECT", "MULTI_SELECT"] as const
 type FieldType = (typeof FIELD_TYPES)[number]
@@ -90,14 +92,11 @@ type EditFieldValues = {
     options: string
 }
 
-const THEMES = [
-    { id: "none", label: "No Theme", preview: "bg-[#18181b]", bgImage: null },
-    { id: "overworld", label: "Overworld", preview: "bg-gradient-to-b from-sky-400 to-green-500", bgImage: "linear-gradient(180deg, #38bdf8 0%, #22c55e 100%)" },
-    { id: "nether", label: "Nether", preview: "bg-gradient-to-b from-red-900 to-orange-600", bgImage: "linear-gradient(180deg, #7f1d1d 0%, #ea580c 100%)" },
-    { id: "end", label: "The End", preview: "bg-gradient-to-b from-purple-900 to-indigo-950", bgImage: "linear-gradient(180deg, #581c87 0%, #1e1b4b 100%)" },
-    { id: "ocean", label: "Deep Ocean", preview: "bg-gradient-to-b from-blue-900 to-cyan-800", bgImage: "linear-gradient(180deg, #1e3a5f 0%, #155e75 100%)" },
-    { id: "mesa", label: "Mesa", preview: "bg-gradient-to-b from-orange-800 to-yellow-700", bgImage: "linear-gradient(180deg, #9a3412 0%, #a16207 100%)" },
-] as const
+type FormSettingsValues = {
+    title: string;
+    description: string;
+    theme: string;
+}
 
 export default function FormBuilderPage({ params }: { params: Promise<{ id: string }>; }) {
     const { id: formId } = use(params);
@@ -110,41 +109,47 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
     const { updateFormVisibilityAsync, status: visibilityUpdateStatus } = useUpdateFormVisibility(formId)
     const { updateFormSettingsAsync, status: settingsUpdateStatus } = useUpdateFormSettings(formId)
     const { updateFormAsync, status: updateFormStatus } = useUpdateForm(formId)
+    const { themes: apiThemes } = useGetAvailableThemes()
 
     const isLoading = isFormLoading || isFieldsLoading
 
     const [drawerOpen, setDrawerOpen] = useState(true)
     const [drawerTab, setDrawerTab] = useState<"edit" | "fields" | "theme">("edit")
 
-    const [editTitle, setEditTitle] = useState("")
-    const [editDescription, setEditDescription] = useState("")
-    const [formDirty, setFormDirty] = useState(false)
+    const formSettings = useForm<FormSettingsValues>({
+        defaultValues: {
+            title: "",
+            description: "",
+            theme: "none",
+        }
+    })
 
-    const [selectedTheme, setSelectedTheme] = useState("none")
+    const isSettingsDirty = formSettings.formState.isDirty
 
     useEffect(() => {
-        if (formData) {
-            setEditTitle(formData.title)
-            setEditDescription(formData.description || "")
+        if (formData && !isSettingsDirty) {
+            formSettings.reset({
+                title: formData.title,
+                description: formData.description || "",
+                theme: formData.theme || "none",
+            })
         }
-    }, [formData])
+    }, [formData, formSettings, isSettingsDirty])
 
-    useEffect(() => {
-        if (formData) {
-            const titleChanged = editTitle !== formData.title
-            const descChanged = editDescription !== (formData.description || "")
-            setFormDirty(titleChanged || descChanged)
-        }
-    }, [editTitle, editDescription, formData])
-
-    const handleSaveForm = async () => {
+    const onSaveSettings: SubmitHandler<FormSettingsValues> = async (data) => {
         await updateFormAsync({
             formId,
-            title: editTitle,
-            description: editDescription || null,
+            title: data.title,
+            description: data.description || null,
+            theme: data.theme,
         })
+        formSettings.reset(data)
         toast.success("Form saved successfully")
     }
+
+    const editTitle = formSettings.watch("title")
+    const editDescription = formSettings.watch("description")
+    const selectedTheme = formSettings.watch("theme")
 
     const [settingsOpen, setSettingsOpen] = useState(false)
     const [passwordInput, setPasswordInput] = useState("")
@@ -253,17 +258,19 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
         setEditOpen(false)
     }
 
+    const combinedThemes = useMemo(() => getCombinedThemes(apiThemes), [apiThemes])
+
     const isCreating = createStatus === "pending"
     const isUpdating = updateStatus === "pending"
     const isSaving = updateFormStatus === "pending"
 
-    const currentTheme = THEMES.find(t => t.id === selectedTheme) ?? THEMES[0]
+    const currentTheme = combinedThemes.find(t => t.id === selectedTheme) ?? combinedThemes[0]
 
     return (
         <div className="flex flex-1 flex-col h-full">
             {/* Inline header */}
             <header className="flex h-14 shrink-0 items-center gap-2 border-b border-[#365314]/40 px-4 lg:px-6">
-                <Button asChild size="md" variant="ghost">
+                <Button asChild size="default" variant="ghost">
                     <Link href="/dashboard/forms">
                         <ArrowLeftIcon className="size-4 mr-1" />
                         Back
@@ -345,7 +352,9 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
                     <div
                         className="rounded-sm border border-slate-800 p-6 min-h-[400px] transition-all"
                         style={{
-                            background: currentTheme?.bgImage || undefined,
+                            backgroundImage: currentTheme?.bgImage || undefined,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
                             backgroundColor: currentTheme?.bgImage ? undefined : '#18181b',
                         }}
                     >
@@ -492,34 +501,32 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
                                     <div>
                                         <label className="text-xs font-medium text-slate-400 mb-1.5 block">Title</label>
                                         <Input
-                                            value={editTitle}
-                                            onChange={(e) => setEditTitle(e.target.value)}
+                                            {...formSettings.register("title")}
                                             placeholder="Form title"
                                             maxLength={55}
                                             className="text-sm"
                                         />
-                                        <p className="text-[10px] text-slate-500 mt-1 text-right">{editTitle.length}/55</p>
+                                        <p className="text-[10px] text-slate-500 mt-1 text-right">{(editTitle?.length || 0)}/55</p>
                                     </div>
                                     <div>
                                         <label className="text-xs font-medium text-slate-400 mb-1.5 block">Description</label>
                                         <Textarea
-                                            value={editDescription}
-                                            onChange={(e) => setEditDescription(e.target.value)}
+                                            {...formSettings.register("description")}
                                             placeholder="Form description (optional)"
                                             rows={3}
                                             maxLength={300}
                                             className="text-sm"
                                         />
-                                        <p className="text-[10px] text-slate-500 mt-1 text-right">{editDescription.length}/300</p>
+                                        <p className="text-[10px] text-slate-500 mt-1 text-right">{(editDescription?.length || 0)}/300</p>
                                     </div>
                                     <Button
-                                        onClick={handleSaveForm}
-                                        disabled={!formDirty || isSaving}
+                                        onClick={formSettings.handleSubmit(onSaveSettings)}
+                                        disabled={!isSettingsDirty || isSaving}
                                         className="w-full"
                                         size="sm"
                                     >
                                         <SaveIcon className="size-3.5 mr-1.5" />
-                                        {isSaving ? "Saving..." : formDirty ? "Save Changes" : "No Changes"}
+                                        {isSaving ? "Saving..." : isSettingsDirty ? "Save Changes" : "No Changes"}
                                     </Button>
                                 </div>
                             )}
@@ -588,24 +595,33 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: stri
                                         Choose a theme for your form&apos;s public page.
                                     </p>
                                     <div className="grid grid-cols-2 gap-2">
-                                        {THEMES.map((theme) => (
+                                        {combinedThemes.map((theme) => (
                                             <button
                                                 key={theme.id}
-                                                onClick={() => setSelectedTheme(theme.id)}
+                                                onClick={() => formSettings.setValue("theme", theme.id, { shouldDirty: true })}
                                                 className={`rounded-sm border-2 p-3 text-center transition-all ${
                                                     selectedTheme === theme.id
                                                         ? "border-[#84cc16] ring-1 ring-[#84cc16]/30"
                                                         : "border-slate-700 hover:border-slate-600"
                                                 }`}
                                             >
-                                                <div className={`w-full h-10 rounded-sm mb-2 ${theme.preview}`} />
-                                                <p className="text-[10px] font-medium text-slate-300">{theme.label}</p>
+                                                <div 
+                                                    className={`w-full h-10 rounded-sm mb-2 ${theme.preview || ""}`} 
+                                                    style={'previewImage' in theme && theme.previewImage ? { backgroundImage: theme.previewImage, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
+                                                />
+                                                <p className="text-[10px] font-medium text-slate-300 line-clamp-1">{theme.label}</p>
                                             </button>
                                         ))}
                                     </div>
-                                    <p className="text-[10px] text-slate-500 text-center mt-2">
-                                        Theme saving coming soon — preview only for now
-                                    </p>
+                                    <Button 
+                                        className="w-full mt-4" 
+                                        onClick={formSettings.handleSubmit(onSaveSettings)} 
+                                        disabled={!isSettingsDirty || isSaving}
+                                        size="sm"
+                                    >
+                                        <SaveIcon className="size-3.5 mr-1.5" />
+                                        {isSaving ? "Saving..." : isSettingsDirty ? "Save Changes" : "No Changes"}
+                                    </Button>
                                 </div>
                             )}
                         </div>

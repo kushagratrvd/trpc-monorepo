@@ -4,6 +4,7 @@ export const createFormInputModel = z.object({
     title: z.string().max(55).describe("Title of the form"),
     description: z.string().max(300).optional().describe("Description of the form"),
     visibility: z.enum(['PUBLIC', 'UNLISTED', 'UNPUBLISHED']).optional().default('UNPUBLISHED').describe("Visibility of the form"),
+    theme: z.string().optional().describe("Theme of the form"),
 })
 
 
@@ -17,6 +18,7 @@ export const listFormsOutputModel = z.array(
         title: z.string().max(55).describe('Title of the form'),
         description: z.string().max(300).nullable().optional().describe('Description of the form'),
         visibility: z.enum(['PUBLIC', 'UNLISTED', 'UNPUBLISHED']).describe('Visibility of the form'),
+        theme: z.string().nullable().optional().describe('Theme of the form'),
         createdAt: z.date().nullable().describe('Creation date of the form'),
         updatedAt: z.date().nullable().describe('Updation date of the form'),
     })
@@ -28,6 +30,7 @@ export const listPublicFormsOutputModel = z.array(
         title: z.string(),
         description: z.string().nullable().optional(),
         visibility: z.enum(['PUBLIC', 'UNLISTED', 'UNPUBLISHED']),
+        theme: z.string().nullable().optional(),
         fieldCount: z.number(),
         createdAt: z.date().nullable(),
     })
@@ -105,6 +108,7 @@ export const getFormOutputModel = z.object({
     title: z.string(),
     description: z.string().nullable().optional(),
     visibility: z.enum(['PUBLIC', 'UNLISTED', 'UNPUBLISHED']),
+    theme: z.string().nullable().optional(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable(),
     hasPassword: z.boolean().optional(),
@@ -116,6 +120,7 @@ export const getFormForEditorOutputModel = z.object({
     title: z.string(),
     description: z.string().nullable().optional(),
     visibility: z.enum(['PUBLIC', 'UNLISTED', 'UNPUBLISHED']),
+    theme: z.string().nullable().optional(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable(),
     hasPassword: z.boolean().optional(),
@@ -199,6 +204,7 @@ export const updateFormInputModel = z.object({
     formId: z.string().uuid().describe('UUID of the form'),
     title: z.string().max(55).optional().describe('New title of the form'),
     description: z.string().max(300).nullable().optional().describe('New description of the form'),
+    theme: z.string().nullable().optional().describe('New theme of the form'),
 })
 
 export const updateFormOutputModel = z.object({
@@ -213,6 +219,7 @@ export const getDashboardStatsOutputModel = z.object({
         id: z.string().uuid(),
         title: z.string(),
         visibility: z.enum(['PUBLIC', 'UNLISTED', 'UNPUBLISHED']),
+        theme: z.string().nullable().optional(),
         createdAt: z.date().nullable(),
     })).describe('Last 5 forms'),
 })

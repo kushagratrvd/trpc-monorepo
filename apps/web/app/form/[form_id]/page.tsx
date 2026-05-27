@@ -15,6 +15,7 @@ import { Checkbox } from "~/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group"
 import { CheckCircle2Icon, AlertCircleIcon, FileTextIcon, HelpCircleIcon, LockIcon, ArrowRightIcon } from "lucide-react"
 import { trpc } from "~/trpc/client"
+import { getCombinedThemes } from "~/lib/themes"
 
 type PublicFormPageProps = {
   params: Promise<{
@@ -26,6 +27,7 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
   const { form_id: formId } = use(params)
   const router = useRouter()
   const { form, isLoading, error } = useGetForm(formId)
+  const { data: apiThemes } = trpc.form.getAvailableThemes.useQuery()
   const { submitFormAsync } = useSubmitForm(formId)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
@@ -255,9 +257,21 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
     )
   }
 
+  // Determine theme
+  const combinedThemes = getCombinedThemes(apiThemes)
+  const currentTheme = combinedThemes.find(t => t.id === form?.theme) ?? combinedThemes[0]
+
   return (
-    <div className="relative min-h-screen flex items-center justify-center p-4 bg-[#0f172a] overflow-hidden">
-      <Card className="relative w-full max-w-xl bg-[#18181b] border-2 border-[#365314] overflow-hidden pt-6 shadow-2xl rounded-sm">
+    <div 
+      className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden transition-all"
+      style={{
+          backgroundImage: currentTheme?.bgImage || undefined,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundColor: currentTheme?.bgImage ? undefined : '#0f172a',
+      }}
+    >
+      <Card className="relative w-full max-w-xl bg-[#18181b]/95 backdrop-blur-sm border-2 border-[#365314] overflow-hidden pt-6 shadow-2xl rounded-sm">
         {/* Dynamic Green Bar at Top */}
         <div className="h-1.5 w-full bg-[#84cc16] absolute top-0 left-0" />
         

@@ -5,6 +5,7 @@ export const createFormInput = z.object({
     description: z.string().max(300).optional().describe('Description of the form'),
     createdBy: z.string().uuid().describe('UUID of the user creating the form'),
     visibility: z.enum(['PUBLIC', 'UNLISTED', 'UNPUBLISHED']).optional().default('UNPUBLISHED').describe('Visibility of the form'),
+    theme: z.string().optional().describe('Theme of the form'),
 })
 
 export type CreateFormInputType = z.infer<typeof createFormInput>
@@ -39,6 +40,7 @@ export const updateFormInput = z.object({
     formId: z.string().uuid().describe('UUID of the form'),
     title: z.string().max(55).optional().describe('New title of the form'),
     description: z.string().max(300).nullable().optional().describe('New description of the form'),
+    theme: z.string().nullable().optional().describe('New theme of the form'),
 })
 
 export type UpdateFormInputType = z.infer<typeof updateFormInput>

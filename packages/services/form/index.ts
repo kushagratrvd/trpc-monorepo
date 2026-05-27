@@ -6,13 +6,14 @@ import { ApiError } from "../errors"
 
 class FormService {
     public async createForm(payload: CreateFormInputType) {
-        const { title, description, createdBy, visibility } = await createFormInput.parseAsync(payload)
+        const { title, description, createdBy, visibility, theme } = await createFormInput.parseAsync(payload)
 
         const result = await db.insert(formsTable).values({
             title,
             description,
             createdBy,
             visibility,
+            theme,
         }).returning({ id: formsTable.id, })
 
         if(!result || result.length === 0 || !result[0]?.id) {
@@ -30,6 +31,7 @@ class FormService {
             title: formsTable.title,
             description: formsTable.description,
             visibility: formsTable.visibility,
+            theme: formsTable.theme,
             createdAt: formsTable.createdAt,
             updatedAt: formsTable.updatedAt,
         }).from(formsTable).where(eq(formsTable.createdBy, userId))
@@ -43,6 +45,7 @@ class FormService {
             title: formsTable.title,
             description: formsTable.description,
             visibility: formsTable.visibility,
+            theme: formsTable.theme,
             createdAt: formsTable.createdAt,
             fieldCount: sql<number>`count(${formFieldsTable.id})::int`
         }).from(formsTable)
@@ -62,6 +65,7 @@ class FormService {
             title: formsTable.title,
             description: formsTable.description,
             visibility: formsTable.visibility,
+            theme: formsTable.theme,
             createdBy: formsTable.createdBy,
             createdAt: formsTable.createdAt,
             updatedAt: formsTable.updatedAt,
@@ -85,7 +89,7 @@ class FormService {
             return null
         }
 
-        const { id, title, description, visibility, createdBy, createdAt, updatedAt, password } = rows[0]!
+        const { id, title, description, visibility, theme, createdBy, createdAt, updatedAt, password } = rows[0]!
         const hasPassword = !!password
 
         let fields: NonNullable<typeof rows[0]['field']>[] = []
@@ -96,7 +100,7 @@ class FormService {
                 .map(r => r.field as NonNullable<typeof r.field>)
         }
 
-        return { id, title, description, visibility, createdBy, createdAt, updatedAt, fields, hasPassword }
+        return { id, title, description, visibility, theme, createdBy, createdAt, updatedAt, fields, hasPassword }
     }
 
     public async updateFormVisibility(payload: UpdateFormVisibilityInputType) {
@@ -120,11 +124,12 @@ class FormService {
     }
 
     public async updateForm(payload: UpdateFormInputType) {
-        const { formId, title, description } = await updateFormInput.parseAsync(payload)
+        const { formId, title, description, theme } = await updateFormInput.parseAsync(payload)
 
         const updates: Record<string, any> = {}
         if (title !== undefined) updates.title = title
         if (description !== undefined) updates.description = description
+        if (theme !== undefined) updates.theme = theme
 
         if (Object.keys(updates).length === 0) {
             return { success: true }
@@ -152,19 +157,21 @@ class FormService {
             .where(and(eq(formsTable.createdBy, userId), eq(formsTable.visibility, 'PUBLIC')))
         const activePublicForms = publicCount?.count ?? 0
 
-        const [subsCount] = await db.execute(sql`
+        const { rows } = await db.execute(sql`
             SELECT COUNT(*)::int AS count
             FROM form_submissions fs
             WHERE fs.form_id IN (
                 SELECT id FROM forms WHERE created_by = ${userId}::uuid
             )
         `)
+        const subsCount = rows[0]
         const totalSubmissions = (subsCount as any)?.count ?? 0
 
         const recentForms = await db.select({
             id: formsTable.id,
             title: formsTable.title,
             visibility: formsTable.visibility,
+            theme: formsTable.theme,
             createdAt: formsTable.createdAt,
         }).from(formsTable)
             .where(eq(formsTable.createdBy, userId))
@@ -206,6 +213,7 @@ class FormService {
                 description: sourceForm.description,
                 password: sourceForm.password,
                 visibility: 'UNPUBLISHED',
+                theme: sourceForm.theme,
                 createdBy: userId,
             }).returning({ id: formsTable.id })
 
