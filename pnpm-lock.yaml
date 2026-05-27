@@ -39,6 +39,9 @@ importers:
       '@types/cookie-parser':
         specifier: ^1.4.10
         version: 1.4.10(@types/express@5.0.6)
+      bcrypt:
+        specifier: ^5.1.1
+        version: 5.1.1
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7
