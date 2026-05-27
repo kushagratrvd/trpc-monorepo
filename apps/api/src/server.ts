@@ -97,4 +97,15 @@ app.use(
   }),
 );
 
+// Keep-Alive Ping for Render free tier
+if (env.BASE_URL && !env.BASE_URL.includes("localhost")) {
+  const PING_INTERVAL = 14 * 60 * 1000; // 14 minutes
+  setInterval(() => {
+    fetch(`${env.BASE_URL}/health`)
+      .then(res => logger.debug(`[Keep-Alive] Pinged ${env.BASE_URL}/health: ${res.status}`))
+      .catch(err => logger.error(`[Keep-Alive] Ping failed: ${err.message}`));
+  }, PING_INTERVAL);
+  logger.info(`[Keep-Alive] Started background ping to ${env.BASE_URL}/health every 14 minutes`);
+}
+
 export default app;
