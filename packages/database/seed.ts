@@ -50,10 +50,11 @@ const DEMO_USER = {
 
 interface SeedField {
   label: string;
-  type: "TEXT" | "NUMBER" | "EMAIL" | "YES_NO" | "PASSWORD";
+  type: "TEXT" | "NUMBER" | "EMAIL" | "YES_NO" | "PASSWORD" | "LONG_TEXT" | "SINGLE_SELECT" | "MULTI_SELECT";
   description?: string;
   placeholder?: string;
   isRequired: boolean;
+  options?: string[];
   /** Function to generate a random realistic value for submissions */
   generate: () => string;
 }
@@ -179,7 +180,7 @@ const FORMS: SeedForm[] = [
       },
       {
         label: "Feedback",
-        type: "TEXT",
+        type: "LONG_TEXT",
         placeholder: "Tell us what you think...",
         description: "Share any thoughts, suggestions, or issues.",
         isRequired: true,
@@ -236,10 +237,18 @@ const FORMS: SeedForm[] = [
       },
       {
         label: "Desired Role",
-        type: "TEXT",
-        placeholder: "e.g. Full-Stack Developer",
-        isRequired: false,
+        type: "SINGLE_SELECT",
+        options: roles,
+        isRequired: true,
         generate: () => pick(roles),
+      },
+      {
+        label: "Primary Skills",
+        type: "MULTI_SELECT",
+        options: ["React", "Node.js", "PostgreSQL", "TypeScript", "Python", "Docker", "AWS", "Go"],
+        description: "Select all technologies you are proficient in.",
+        isRequired: false,
+        generate: () => JSON.stringify(Array.from(new Set([pick(["React", "Node.js", "Python", "Go"]), pick(["PostgreSQL", "Docker", "AWS", "TypeScript"])]))),
       },
       {
         label: "Open to Relocation?",
@@ -326,6 +335,7 @@ async function seed() {
           placeholder: f.placeholder ?? null,
           isRequired: f.isRequired,
           index: String(i + 1),
+          options: f.options ?? null,
         })
         .returning({ id: formFieldsTable.id });
 

@@ -2,9 +2,9 @@
 
 Formz is a premium, high-performance form builder designed with a zero-trust architecture, robust data validation, and a stunning modern user interface. It was built for speed, security, and developer experience.
 
-## Hackathon Evaluation Links
+## Demo Environment
 
-To make evaluation as smooth as possible, the project comes pre-seeded with 3 themed forms (Tech Conference, Product Feedback, Software Engineer Application) populated with randomized analytics data.
+To make exploring the platform as smooth as possible, the project comes pre-seeded with 3 themed forms (Tech Conference, Product Feedback, Software Engineer Application) populated with randomized analytics data.
 
 **Demo Credentials:**
 - **Email:** `demo@formz.dev`
@@ -28,6 +28,13 @@ To make evaluation as smooth as possible, the project comes pre-seeded with 3 th
 - **Frontend:** Next.js (App Router), TailwindCSS, React Hook Form, Recharts, Lucide Icons
 - **Backend:** Express, tRPC, Zod, Scalar API Reference, Resend
 - **Database:** PostgreSQL via Drizzle ORM
+
+## Deployment Architecture
+
+The monorepo is intelligently split into two distinct hosting environments to maximize performance and compatibility:
+
+- **Frontend (Vercel):** The Next.js `web` application is hosted on Vercel. It is completely serverless and heavily optimized for static rendering and edge caching.
+- **Backend (Render):** The Express `api` is hosted as a persistent Web Service on Render. It is compiled down into a single highly-optimized bundle using `tsup`. To maintain peak responsiveness on Render's free tier, the backend features a built-in background keep-alive polling mechanism to completely bypass cold-boot delays.
 
 ## Local Setup
 
