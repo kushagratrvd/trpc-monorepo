@@ -1,5 +1,5 @@
 {
-  "id": "4f6cda4d-9b2b-473c-a9af-33c18cf556f8",
+  "id": "9d9fb227-3190-4740-91b7-9d0b3066e729",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -215,6 +215,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'UNPUBLISHED'"
+        },
+        "theme": {
+          "name": "theme",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'blank'"
         }
       },
       "indexes": {},

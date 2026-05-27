@@ -32,7 +32,8 @@ CREATE TABLE "forms" (
 	"created_at" timestamp DEFAULT now(),
 	"updated_at" timestamp,
 	"password" varchar(255),
-	"visibility" "form_visibility" DEFAULT 'UNPUBLISHED' NOT NULL
+	"visibility" "form_visibility" DEFAULT 'UNPUBLISHED' NOT NULL,
+	"theme" varchar(255) DEFAULT 'blank'
 );
 --> statement-breakpoint
 CREATE TABLE "form_fields" (
