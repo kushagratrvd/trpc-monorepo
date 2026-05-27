@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useState, useEffect } from "react"
+import { use, useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, Controller } from "react-hook-form"
 import { useGetForm, useSubmitForm } from "~/hooks/api/form"
@@ -13,7 +13,7 @@ import { Skeleton } from "~/components/ui/skeleton"
 import { Textarea } from "~/components/ui/textarea"
 import { Checkbox } from "~/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group"
-import { CheckCircle2Icon, AlertCircleIcon, FileTextIcon, HelpCircleIcon, LockIcon, ArrowRightIcon } from "lucide-react"
+import { CheckCircle2Icon, AlertCircleIcon, FileTextIcon, HelpCircleIcon, LockIcon, ArrowRightIcon, ChevronRightIcon, ChevronLeftIcon } from "lucide-react"
 import { trpc } from "~/trpc/client"
 import { getCombinedThemes } from "~/lib/themes"
 
@@ -39,6 +39,9 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
   const [unlockedFields, setUnlockedFields] = useState<any[]>([])
 
   const fieldsToRender = isUnlocked ? unlockedFields : (form?.fields || [])
+  const totalSteps = fieldsToRender.length
+
+  const [currentStep, setCurrentStep] = useState(-1)
 
   const {
     register,
@@ -46,8 +49,10 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
     control,
     watch,
     setValue,
+    trigger,
+    getValues,
     formState: { errors, isSubmitting },
-  } = useForm()
+  } = useForm({ mode: "onChange" })
 
   // Hydrate from draft
   useEffect(() => {
@@ -74,14 +79,48 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
     return () => subscription.unsubscribe()
   }, [watch, formId])
 
+  // Global Keyboard listener for Next/Submit
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        const activeTag = document.activeElement?.tagName
+        if (activeTag === "TEXTAREA") return
+        e.preventDefault()
+        if (currentStep < totalSteps) {
+          handleNext()
+        } else if (currentStep === totalSteps) {
+          handleSubmit(onSubmit)()
+        }
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [currentStep, totalSteps, fieldsToRender])
+
+  const handleNext = async () => {
+    if (currentStep === -1) {
+      setCurrentStep(0)
+      return
+    }
+    const currentField = fieldsToRender[currentStep]
+    if (currentField) {
+      const isValid = await trigger(currentField.labelKey)
+      if (isValid) {
+        setCurrentStep((prev) => prev + 1)
+      }
+    }
+  }
+
+  const handleBack = () => {
+    setCurrentStep((prev) => Math.max(-1, prev - 1))
+  }
+
   const onSubmit = async (data: Record<string, any>) => {
     if (!form) return
 
-    // Honeypot spam protection: if the hidden field was filled, a bot submitted this.
-    // Show fake success without actually saving anything.
+    // Honeypot spam protection
     if (data.__hp_website) {
       await new Promise((r) => setTimeout(r, 800))
-      
       sessionStorage.setItem(`formz_submission_${formId}`, JSON.stringify({
         formTitle: form.title,
         fields: fieldsToRender,
@@ -136,18 +175,13 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
 
   const getInputType = (type: string) => {
     switch (type) {
-      case "NUMBER":
-        return "number"
-      case "EMAIL":
-        return "email"
-      case "PASSWORD":
-        return "password"
-      default:
-        return "text"
+      case "NUMBER": return "number"
+      case "EMAIL": return "email"
+      case "PASSWORD": return "password"
+      default: return "text"
     }
   }
 
-  // Loading State
   if (isLoading) {
     return (
       <div className="relative min-h-screen flex items-center justify-center p-4 bg-[#0f172a] overflow-hidden">
@@ -158,23 +192,13 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
             <Skeleton className="h-4 w-5/6" />
           </CardHeader>
           <CardContent className="space-y-6">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="space-y-2">
-                <Skeleton className="h-4 w-1/4" />
-                <Skeleton className="h-9 w-full" />
-                <Skeleton className="h-3 w-1/2" />
-              </div>
-            ))}
+            <Skeleton className="h-32 w-full" />
           </CardContent>
-          <CardFooter className="pt-6">
-            <Skeleton className="h-9 w-24" />
-          </CardFooter>
         </Card>
       </div>
     )
   }
 
-  // Error State or Not Found
   if (error || !form) {
     return (
       <div className="relative min-h-screen flex items-center justify-center p-4 bg-[#0f172a] overflow-hidden">
@@ -212,7 +236,6 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
     }
   }
 
-  // Lock Screen State
   if (form && form.hasPassword && !isUnlocked) {
     return (
       <div className="relative min-h-screen flex items-center justify-center p-4 bg-[#0f172a] overflow-hidden">
@@ -257,13 +280,15 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
     )
   }
 
-  // Determine theme
   const combinedThemes = getCombinedThemes(apiThemes)
   const currentTheme = combinedThemes.find(t => t.id === form?.theme) ?? combinedThemes[0]
+  
+  const progressPercent = Math.min(Math.round(((currentStep + 1) / (totalSteps + 1)) * 100), 100)
+  const activeField = currentStep >= 0 && currentStep < totalSteps ? fieldsToRender[currentStep] : null
 
   return (
     <div 
-      className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden transition-all"
+      className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden transition-all duration-700"
       style={{
           backgroundImage: currentTheme?.bgImage || undefined,
           backgroundSize: 'cover',
@@ -271,173 +296,141 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
           backgroundColor: currentTheme?.bgImage ? undefined : '#0f172a',
       }}
     >
-      <Card className="relative w-full max-w-xl bg-[#18181b]/95 backdrop-blur-sm border-2 border-[#365314] overflow-hidden pt-6 shadow-2xl rounded-sm">
-        {/* Dynamic Green Bar at Top */}
+      <Card className="relative w-full max-w-2xl bg-[#18181b]/95 backdrop-blur-md border-2 border-[#365314] overflow-hidden pt-6 shadow-2xl rounded-sm transition-all duration-300">
         <div className="h-1.5 w-full bg-[#84cc16] absolute top-0 left-0" />
         
-        <CardHeader className="space-y-1.5 border-b-2 border-slate-950 pb-6">
-          <CardTitle className="text-2xl font-bold text-white">
-            {form.title}
-          </CardTitle>
-          {form.description && (
-            <CardDescription className="text-sm text-slate-400 leading-relaxed">
-              {form.description}
-            </CardDescription>
-          )}
-        </CardHeader>
-
         <form onSubmit={handleSubmit(onSubmit)}>
-          {/* Honeypot field — invisible to humans, bots auto-fill it */}
+          {/* Honeypot field */}
           <div
             aria-hidden="true"
             className="absolute opacity-0 pointer-events-none -z-10 overflow-hidden h-0 w-0"
             style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}
           >
             <label htmlFor="__hp_website">Website</label>
-            <input
-              id="__hp_website"
-              type="text"
-              tabIndex={-1}
-              autoComplete="off"
-              {...register("__hp_website")}
-            />
+            <input id="__hp_website" type="text" tabIndex={-1} autoComplete="off" {...register("__hp_website")} />
           </div>
 
-          <CardContent className="pt-6 space-y-6">
-            {fieldsToRender.length > 0 ? (
-              fieldsToRender.map((field) => {
-                const isYesNo = field.type === "YES_NO"
+          <CardContent className="pt-6 min-h-[300px] flex flex-col justify-center">
+            
+            {/* Step -1: Welcome Screen */}
+            {currentStep === -1 && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6 text-center py-8">
+                <div className="inline-flex px-3 py-1 rounded-sm border-2 border-[#84cc16]/30 bg-[#84cc16]/10 text-[10px] uppercase font-bold tracking-widest text-[#84cc16] mb-2">
+                  Formz Multi-Page
+                </div>
+                <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+                  {form.title}
+                </h1>
+                {form.description && (
+                  <p className="text-slate-400 text-sm sm:text-base max-w-md mx-auto leading-relaxed">
+                    {form.description}
+                  </p>
+                )}
+                
+                <div className="pt-8">
+                  {totalSteps === 0 ? (
+                    <p className="text-sm text-slate-500 border-2 border-dashed border-slate-800 p-4 rounded-sm">This form has no questions yet.</p>
+                  ) : (
+                    <Button
+                      type="button"
+                      onClick={handleNext}
+                      className="group h-12 px-8 text-sm font-bold bg-[#84cc16] hover:bg-[#65a30d] text-slate-950 border-2 border-[#365314] rounded-sm transition-all active:translate-y-0.5"
+                    >
+                      Start Form
+                      <ArrowRightIcon className="size-4 ml-2 transition-transform group-hover:translate-x-1" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
 
-                if (isYesNo) {
-                  return (
-                    <Field key={field.id} orientation="horizontal" className="justify-between items-center py-3 border-2 border-slate-800 hover:border-[#365314] bg-slate-950/20 px-4 rounded-sm transition-all">
-                      <div className="flex flex-col gap-1 pr-4">
-                        <FieldLabel htmlFor={field.labelKey} className="text-sm font-bold leading-none cursor-pointer flex items-center text-slate-200">
-                          {field.label}
-                          {field.isRequired && (
-                            <span className="text-destructive font-bold ml-1 font-mono" title="Required">*</span>
-                          )}
+            {/* Steps 0 to N-1: Active Question */}
+            {activeField && (
+              <div className="animate-in fade-in slide-in-from-right-8 duration-300 space-y-6">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-500 font-mono tracking-wider">
+                    <span>Question {currentStep + 1} of {totalSteps}</span>
+                    {activeField.isRequired ? (
+                      <span className="text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-sm border border-amber-500/20">Required</span>
+                    ) : (
+                      <span className="text-slate-500 border border-slate-700 px-2 py-0.5 rounded-sm">Optional</span>
+                    )}
+                  </div>
+                  <h2 className="text-2xl font-bold text-white">
+                    {activeField.label}
+                  </h2>
+                  {activeField.description && (
+                    <p className="text-sm text-slate-400">{activeField.description}</p>
+                  )}
+                </div>
+
+                <div className="pt-4 border-t-2 border-slate-900/50">
+                  <div className="min-h-[100px]">
+                    {/* Render specific field type */}
+                    {activeField.type === "YES_NO" && (
+                      <Field orientation="horizontal" className="justify-between items-center py-4 border-2 border-slate-800 hover:border-[#365314] bg-slate-950/40 px-5 rounded-sm transition-all cursor-pointer">
+                        <FieldLabel className="text-base font-bold cursor-pointer text-slate-200">
+                          {activeField.label}
                         </FieldLabel>
-                        {field.description && (
-                          <FieldDescription className="text-xs text-slate-400 mt-0.5 leading-normal font-mono">
-                            {field.description}
-                          </FieldDescription>
-                        )}
-                      </div>
-                      <Controller
-                        control={control}
-                        name={field.labelKey}
-                        defaultValue={false}
-                        render={({ field: { value, onChange } }) => (
-                          <Switch
-                            id={field.labelKey}
-                            checked={!!value}
-                            onCheckedChange={onChange}
-                          />
-                        )}
-                      />
-                    </Field>
-                  )
-                }
+                        <Controller
+                          control={control}
+                          name={activeField.labelKey}
+                          defaultValue={false}
+                          render={({ field: { value, onChange } }) => (
+                            <Switch id={activeField.labelKey} checked={!!value} onCheckedChange={onChange} className="scale-125 origin-right" />
+                          )}
+                        />
+                      </Field>
+                    )}
 
-                if (field.type === 'LONG_TEXT') {
-                  return (
-                    <Field key={field.id} className="space-y-2">
-                      <FieldLabel htmlFor={field.labelKey} className="text-sm font-bold flex items-center text-slate-200">
-                        {field.label}
-                        {field.isRequired && <span className="text-destructive font-bold ml-1 font-mono" title="Required">*</span>}
-                      </FieldLabel>
-                      
+                    {activeField.type === "LONG_TEXT" && (
                       <Textarea
-                        id={field.labelKey}
-                        placeholder={field.placeholder ?? undefined}
-                        className={`bg-slate-950/30 border-2 border-slate-800 text-slate-100 placeholder:text-slate-650 focus-visible:border-[#84cc16] focus-visible:ring-[3px] focus-visible:ring-[#84cc16]/20 rounded-sm font-sans ${errors[field.labelKey] ? 'border-destructive focus-visible:border-destructive' : ''}`}
+                        autoFocus
+                        placeholder={activeField.placeholder ?? "Type your answer..."}
+                        className={`bg-slate-950/50 border-2 border-slate-800 text-slate-100 placeholder:text-slate-600 focus-visible:border-[#84cc16] focus-visible:ring-0 p-4 text-base rounded-sm ${errors[activeField.labelKey] ? 'border-destructive focus-visible:border-destructive' : ''}`}
                         rows={4}
-                        {...register(field.labelKey, {
-                          required: field.isRequired ? `${field.label} is required` : false,
+                        {...register(activeField.labelKey, {
+                          required: activeField.isRequired ? `${activeField.label} is required` : false,
                         })}
                       />
+                    )}
 
-                      {field.description && (
-                        <FieldDescription className="text-xs text-slate-400 font-mono">
-                          {field.description}
-                        </FieldDescription>
-                      )}
-
-                      {errors[field.labelKey] && (
-                        <FieldError className="text-xs font-semibold text-destructive mt-1 flex items-center gap-1 animate-fadeIn font-mono">
-                          <AlertCircleIcon className="size-3.5" />
-                          {errors[field.labelKey]?.message as string}
-                        </FieldError>
-                      )}
-                    </Field>
-                  )
-                }
-
-                if (field.type === 'SINGLE_SELECT') {
-                  return (
-                    <Field key={field.id} className="space-y-3">
-                      <FieldLabel className="text-sm font-bold flex items-center text-slate-200">
-                        {field.label}
-                        {field.isRequired && <span className="text-destructive font-bold ml-1 font-mono" title="Required">*</span>}
-                      </FieldLabel>
-                      {field.description && <FieldDescription className="text-xs text-slate-400 font-mono">{field.description}</FieldDescription>}
-                      
+                    {activeField.type === "SINGLE_SELECT" && (
                       <Controller
                         control={control}
-                        name={field.labelKey}
-                        rules={{ required: field.isRequired ? `${field.label} is required` : false }}
+                        name={activeField.labelKey}
+                        rules={{ required: activeField.isRequired ? `${activeField.label} is required` : false }}
                         render={({ field: { value, onChange } }) => (
-                          <RadioGroup onValueChange={onChange} value={value} className="space-y-2">
-                            {field.options?.map((option: string) => (
-                              <div key={option} className="flex items-center space-x-2">
-                                <RadioGroupItem value={option} id={`${field.labelKey}-${option}`} className="border-2 border-slate-800 text-[#84cc16] focus-visible:ring-[3px] focus-visible:ring-[#84cc16]/20" />
-                                <label htmlFor={`${field.labelKey}-${option}`} className="text-sm font-medium leading-none cursor-pointer text-slate-350">
-                                  {option}
-                                </label>
-                              </div>
+                          <RadioGroup onValueChange={onChange} value={value} className="grid gap-3">
+                            {activeField.options?.map((option: string) => (
+                              <label key={option} className={`flex items-center p-4 border-2 rounded-sm cursor-pointer transition-all ${value === option ? 'border-[#84cc16] bg-[#84cc16]/10' : 'border-slate-800 bg-slate-950/40 hover:border-slate-700'}`}>
+                                <RadioGroupItem value={option} id={`${activeField.labelKey}-${option}`} className="mr-3 border-2 border-slate-600 text-[#84cc16]" />
+                                <span className="text-sm font-bold text-slate-200">{option}</span>
+                              </label>
                             ))}
                           </RadioGroup>
                         )}
                       />
-                      
-                      {errors[field.labelKey] && (
-                        <FieldError className="text-xs font-semibold text-destructive mt-1 flex items-center gap-1 animate-fadeIn font-mono">
-                          <AlertCircleIcon className="size-3.5" />
-                          {errors[field.labelKey]?.message as string}
-                        </FieldError>
-                      )}
-                    </Field>
-                  )
-                }
+                    )}
 
-                if (field.type === 'MULTI_SELECT') {
-                  return (
-                    <Field key={field.id} className="space-y-3">
-                      <FieldLabel className="text-sm font-bold flex items-center text-slate-200">
-                        {field.label}
-                        {field.isRequired && <span className="text-destructive font-bold ml-1 font-mono" title="Required">*</span>}
-                      </FieldLabel>
-                      {field.description && <FieldDescription className="text-xs text-slate-400 font-mono">{field.description}</FieldDescription>}
-                      
+                    {activeField.type === "MULTI_SELECT" && (
                       <Controller
                         control={control}
-                        name={field.labelKey}
+                        name={activeField.labelKey}
                         defaultValue={[]}
                         rules={{
                           validate: (val) => {
-                            if (field.isRequired && (!val || val.length === 0)) return `${field.label} is required`
+                            if (activeField.isRequired && (!val || val.length === 0)) return `${activeField.label} is required`
                             return true
                           }
                         }}
                         render={({ field: { value, onChange } }) => (
-                          <div className="space-y-2">
-                            {field.options?.map((option: string) => {
-                              const checked = value?.includes(option);
+                          <div className="grid gap-3">
+                            {activeField.options?.map((option: string) => {
+                              const checked = value?.includes(option)
                               return (
-                                <div key={option} className="flex items-center space-x-2">
+                                <label key={option} className={`flex items-center p-4 border-2 rounded-sm cursor-pointer transition-all ${checked ? 'border-[#84cc16] bg-[#84cc16]/10' : 'border-slate-800 bg-slate-950/40 hover:border-slate-700'}`}>
                                   <Checkbox
-                                    id={`${field.labelKey}-${option}`}
                                     checked={checked}
                                     onCheckedChange={(isChecked) => {
                                       const newValue = isChecked
@@ -445,101 +438,132 @@ export default function PublicFormPage({ params }: PublicFormPageProps) {
                                         : (value || []).filter((v: string) => v !== option);
                                       onChange(newValue);
                                     }}
-                                    className="border-2 border-slate-800 data-[state=checked]:bg-[#84cc16] data-[state=checked]:border-[#365314] rounded-sm"
+                                    className="mr-3 border-2 border-slate-600 data-[state=checked]:bg-[#84cc16] data-[state=checked]:border-[#84cc16] rounded-sm"
                                   />
-                                  <label htmlFor={`${field.labelKey}-${option}`} className="text-sm font-medium leading-none cursor-pointer text-slate-350">
-                                    {option}
-                                  </label>
-                                </div>
+                                  <span className="text-sm font-bold text-slate-200">{option}</span>
+                                </label>
                               )
                             })}
                           </div>
                         )}
                       />
-                      
-                      {errors[field.labelKey] && (
-                        <FieldError className="text-xs font-semibold text-destructive mt-1 flex items-center gap-1 animate-fadeIn font-mono">
-                          <AlertCircleIcon className="size-3.5" />
-                          {errors[field.labelKey]?.message as string}
-                        </FieldError>
-                      )}
-                    </Field>
-                  )
-                }
+                    )}
 
-                return (
-                  <Field key={field.id} className="space-y-2">
-                    <FieldLabel htmlFor={field.labelKey} className="text-sm font-bold flex items-center text-slate-200">
-                      {field.label}
-                      {field.isRequired && (
-                        <span className="text-destructive font-bold ml-1 font-mono" title="Required">*</span>
-                      )}
-                    </FieldLabel>
-                    
-                    <div className="relative">
+                    {["TEXT", "NUMBER", "EMAIL", "PASSWORD"].includes(activeField.type) && (
                       <Input
-                        id={field.labelKey}
-                        type={getInputType(field.type)}
-                        placeholder={field.placeholder ?? undefined}
-                        className={`bg-slate-950/30 border-2 border-slate-800 text-slate-100 placeholder:text-slate-650 focus-visible:border-[#84cc16] focus-visible:ring-[3px] focus-visible:ring-[#84cc16]/20 rounded-sm font-sans ${errors[field.labelKey] ? 'border-destructive focus-visible:border-destructive' : ''}`}
-                        {...register(field.labelKey, {
-                          required: field.isRequired ? `${field.label} is required` : false,
-                          pattern: field.type === "EMAIL" ? {
+                        autoFocus
+                        type={getInputType(activeField.type)}
+                        placeholder={activeField.placeholder ?? "Type your answer..."}
+                        className={`h-14 bg-slate-950/50 border-2 border-slate-800 text-slate-100 placeholder:text-slate-600 focus-visible:border-[#84cc16] focus-visible:ring-0 px-4 text-lg rounded-sm ${errors[activeField.labelKey] ? 'border-destructive focus-visible:border-destructive' : ''}`}
+                        {...register(activeField.labelKey, {
+                          required: activeField.isRequired ? `${activeField.label} is required` : false,
+                          pattern: activeField.type === "EMAIL" ? {
                             value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
                             message: "Please enter a valid email address",
                           } : undefined,
                         })}
                       />
-                    </div>
-
-                    {field.description && (
-                      <FieldDescription className="text-xs text-slate-400 font-mono">
-                        {field.description}
-                      </FieldDescription>
                     )}
 
-                    {errors[field.labelKey] && (
-                      <FieldError className="text-xs font-semibold text-destructive mt-1 flex items-center gap-1 animate-fadeIn font-mono">
-                        <AlertCircleIcon className="size-3.5" />
-                        {errors[field.labelKey]?.message as string}
+                    {errors[activeField.labelKey] && (
+                      <FieldError className="text-sm font-bold text-destructive mt-3 flex items-center gap-2 animate-fadeIn bg-destructive/10 p-2.5 border-2 border-destructive/20 rounded-sm">
+                        <AlertCircleIcon className="size-4" />
+                        {errors[activeField.labelKey]?.message as string}
                       </FieldError>
                     )}
-                  </Field>
-                )
-              })
-            ) : (
-              <div className="flex flex-col items-center justify-center py-10 text-center border-2 border-dashed border-[#365314]/50 rounded-sm bg-[#18181b]/55 p-6">
-                <HelpCircleIcon className="size-10 text-slate-500 mb-3" />
-                <h3 className="text-base font-bold text-slate-350 mb-1">Empty Form</h3>
-                <p className="text-xs text-slate-450 max-w-xs leading-relaxed font-mono">
-                  This form does not have any fields configured yet. Please check back later.
-                </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-6 border-t-2 border-slate-900/50">
+                  <Button type="button" variant="outline" onClick={handleBack} className="border-2 border-slate-700 hover:bg-slate-800 text-slate-300 rounded-sm h-10 px-4">
+                    <ChevronLeftIcon className="size-4 mr-1" />
+                    Back
+                  </Button>
+                  <Button type="button" onClick={handleNext} className="bg-[#84cc16] hover:bg-[#65a30d] text-slate-950 border-2 border-[#365314] font-bold rounded-sm h-10 px-6 active:translate-y-0.5 transition-all">
+                    Next
+                    <ChevronRightIcon className="size-4 ml-1" />
+                  </Button>
+                </div>
               </div>
             )}
 
-            {submitError && (
-              <div className="p-3.5 rounded-sm border-2 border-destructive/30 bg-destructive/10 text-destructive text-sm flex items-start gap-2.5 animate-fadeIn">
-                <AlertCircleIcon className="size-5 shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <span className="font-bold text-destructive">Submission Error:</span> {submitError}
+            {/* Step N: Review & Submit */}
+            {currentStep === totalSteps && totalSteps > 0 && (
+              <div className="animate-in fade-in slide-in-from-right-8 duration-500 space-y-6">
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-bold text-white flex items-center">
+                    <CheckCircle2Icon className="size-6 text-[#84cc16] mr-2" />
+                    Review your answers
+                  </h2>
+                  <p className="text-sm text-slate-400 font-mono">
+                    Click any row to jump back and edit it before submitting.
+                  </p>
+                </div>
+
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar border-y-2 border-slate-900/50 py-4">
+                  {fieldsToRender.map((f, i) => {
+                    const rawVal = getValues(f.labelKey)
+                    let displayVal = "—"
+                    if (rawVal !== undefined && rawVal !== null && rawVal !== "") {
+                      if (f.type === "YES_NO") displayVal = rawVal ? "Yes" : "No"
+                      else if (Array.isArray(rawVal)) displayVal = rawVal.length > 0 ? rawVal.join(", ") : "—"
+                      else displayVal = String(rawVal)
+                    }
+                    return (
+                      <div 
+                        key={f.id} 
+                        onClick={() => setCurrentStep(i)}
+                        className="group flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 border-2 border-slate-800 bg-slate-950/30 hover:border-[#84cc16]/50 hover:bg-[#84cc16]/5 rounded-sm cursor-pointer transition-colors"
+                      >
+                        <span className="text-sm font-bold text-slate-400 group-hover:text-slate-300 max-w-[200px] truncate">
+                          {i + 1}. {f.label}
+                        </span>
+                        <span className="text-sm font-mono font-bold text-slate-200 text-left sm:text-right max-w-full break-words sm:max-w-[300px]">
+                          {displayVal}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {submitError && (
+                  <div className="p-3.5 rounded-sm border-2 border-destructive/30 bg-destructive/10 text-destructive text-sm flex items-start gap-2.5 animate-fadeIn">
+                    <AlertCircleIcon className="size-5 shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <span className="font-bold text-destructive">Error:</span> {submitError}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between pt-2">
+                  <Button type="button" variant="outline" onClick={handleBack} className="border-2 border-slate-700 hover:bg-slate-800 text-slate-300 rounded-sm h-12 px-6">
+                    <ChevronLeftIcon className="size-4 mr-1" />
+                    Back
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-1 ml-4 h-12 text-sm font-bold bg-[#84cc16] hover:bg-[#65a30d] text-slate-950 border-2 border-[#365314] rounded-sm transition-all shadow-[0_0_20px_rgba(132,204,22,0.2)] hover:shadow-[0_0_30px_rgba(132,204,22,0.4)] active:translate-y-0.5"
+                  >
+                    {isSubmitting ? "Submitting..." : "Submit Form"}
+                  </Button>
                 </div>
               </div>
             )}
           </CardContent>
 
-          <CardFooter className="border-t-2 border-slate-950 pt-6 pb-6 flex items-center justify-between">
-            <p className="text-xs text-slate-500 font-mono">
-              Never share passwords or sensitive information.
-            </p>
-            {fieldsToRender.length > 0 && (
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="text-xs px-6"
-              >
-                {isSubmitting ? "Submitting..." : "Submit"}
-              </Button>
-            )}
+          <CardFooter className="pt-0 pb-6 flex flex-col items-center border-none">
+            {/* Minimal Progress Bar */}
+            <div className="w-full flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono mb-2">
+              <span>{progressPercent}% Complete</span>
+              <span>Step {Math.max(currentStep + 1, 0)} of {totalSteps}</span>
+            </div>
+            <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+              <div 
+                className="h-full bg-[#84cc16] transition-all duration-700 ease-in-out shadow-[0_0_10px_#84cc16]"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
           </CardFooter>
         </form>
       </Card>
